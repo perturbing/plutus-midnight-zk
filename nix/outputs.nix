@@ -30,26 +30,30 @@ let
     CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
   };
 
-  cargoArtifacts = craneLib.buildDepsOnly (rustCommonArgs // {
-    pname = "hello-world";
-    version = "0.1.0";
-  });
+  rustPkg = { pname = "rust-midnight-zk"; version = "0.1.0"; };
+
+  cargoArtifacts = craneLib.buildDepsOnly (rustCommonArgs // rustPkg);
 
   # Rust based executables
 
-  rust-hello-world = craneLib.buildPackage (rustCommonArgs // {
+  rust-midnight-zk = craneLib.buildPackage (rustCommonArgs // rustPkg // {
     inherit cargoArtifacts;
     copyLibs = true;
-    cargoExtraArgs = "--bin hello-world";
-    pname = "hello-world";
-    version = "0.1.0";
+    cargoExtraArgs = "--bin write-test-vectors";
   });
 
   # Haskell.nix based executables
 
   packages = {
     plutus-midnight-zk-main = project.flake'.packages."plutus-midnight-zk:exe:main";
-    rust-midnight-zk = rust-hello-world;
+    rust-midnight-zk-write-test-vectors = rust-midnight-zk;
+  };
+
+  apps = {
+    rust-midnight-zk-write-test-vectors = {
+      type = "app";
+      program = "${rust-midnight-zk}/bin/write-test-vectors";
+    };
   };
 
   devShells = rec {
@@ -84,6 +88,7 @@ in
 
 {
   inherit packages;
+  inherit apps;
   inherit devShells;
   inherit hydraJobs;
 }

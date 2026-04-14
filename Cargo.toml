@@ -1,5 +1,24 @@
 [workspace]
-members = [
-    "rust-midnight-zk",
-]
+members  = ["rust-midnight-zk"]
 resolver = "2"
+
+[workspace.dependencies]
+midnight-circuits  = "6.0.0"
+midnight-proofs    = "0.7.0"
+midnight-zk-stdlib = "1.0.0"
+midnight-curves    = "0.2.0"
+ff          = "0.13"
+group       = "0.13"
+serde_json  = "1"
+rand        = "0.8"
+rand_chacha = "0.3"
+sha2        = "0.10"
+hex-literal = "0.4"
+num-bigint  = { version = "0.4", features = ["rand"] }
+num-traits  = "0.2"
+
+[patch.crates-io]
+midnight-proofs    = { git = "https://github.com/midnightntwrk/midnight-zk", branch = "next" }
+midnight-curves    = { git = "https://github.com/midnightntwrk/midnight-zk", branch = "next" }
+midnight-circuits  = { git = "https://github.com/midnightntwrk/midnight-zk", branch = "next" }
+midnight-zk-stdlib = { git = "https://github.com/midnightntwrk/midnight-zk", branch = "next" }
