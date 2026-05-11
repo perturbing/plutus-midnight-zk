@@ -1,0 +1,2528 @@
+{
+  "gate_polys": [
+    [
+      {
+        "op": "Fixed",
+        "query_index": 13
+      },
+      {
+        "op": "Fixed",
+        "query_index": 9
+      },
+      {
+        "op": "Fixed",
+        "query_index": 1
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Fixed",
+        "query_index": 2
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Fixed",
+        "query_index": 3
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Fixed",
+        "query_index": 4
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Fixed",
+        "query_index": 5
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Fixed",
+        "query_index": 6
+      },
+      {
+        "op": "Advice",
+        "query_index": 5
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Fixed",
+        "query_index": 7
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Fixed",
+        "query_index": 8
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 14
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 15
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Fixed",
+        "query_index": 1
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 5
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 15
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Fixed",
+        "query_index": 2
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 6
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 15
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Fixed",
+        "query_index": 3
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 7
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 17
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 17
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 17
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Advice",
+        "query_index": 8
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 17
+      },
+      {
+        "op": "Fixed",
+        "query_index": 6
+      },
+      {
+        "op": "Advice",
+        "query_index": 5
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "ce1ab50741de1861779eba534074d58aa6d8e21012246d5dfd22b981c314811b"
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "63d7c0fc137271e3b4094cecca0c99751733f59c89215d0ed22ecbc44c2ef33d"
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "c1ede1a0ae34cd3e0b08911560337f00b48e54bf798725beda64667adfc4053f"
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Advice",
+        "query_index": 8
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 17
+      },
+      {
+        "op": "Fixed",
+        "query_index": 7
+      },
+      {
+        "op": "Advice",
+        "query_index": 6
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "74b3a831cd01f5d7b1e70f954b3174ca06ae3f6dd74a2a434ed1853907214d40"
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "f14956950316faf72f42797631b2e9734b4d529e0e62bc81bdc6644270c82c0b"
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "1f1a7f638cfca8e2b448438319b50b6d495d0341c688935afa5950a54d66df0f"
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Advice",
+        "query_index": 8
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 17
+      },
+      {
+        "op": "Fixed",
+        "query_index": 8
+      },
+      {
+        "op": "Advice",
+        "query_index": 7
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "4091c4907ec55df90a735ab601ad9731035d5cf4474ae2434321a6cdbe3d1d5e"
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "8aa75a2f00b9c77df35489ae5f6dcb4412c6a57ee79618939daf53fc9c2fd76b"
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "dbe09df98eb84fbbd9468ed59cbdff1e83ef4b05a980f8ca7ba05f3aaac59749"
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Advice",
+        "query_index": 8
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ]
+  ],
+  "lookup_input_exprs": [
+    [
+      [
+        {
+          "op": "Fixed",
+          "query_index": 10
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 16
+        },
+        {
+          "op": "Advice",
+          "query_index": 1
+        },
+        {
+          "op": "Product"
+        }
+      ]
+    ]
+  ],
+  "lookup_table_exprs": [
+    [
+      [
+        {
+          "op": "Fixed",
+          "query_index": 11
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 12
+        }
+      ]
+    ]
+  ],
+  "perm_col_types": [
+    {
+      "col_type": 1,
+      "eval_idx": 0
+    },
+    {
+      "col_type": 0,
+      "eval_idx": 0
+    },
+    {
+      "col_type": 0,
+      "eval_idx": 1
+    },
+    {
+      "col_type": 0,
+      "eval_idx": 2
+    },
+    {
+      "col_type": 0,
+      "eval_idx": 3
+    },
+    {
+      "col_type": 0,
+      "eval_idx": 4
+    },
+    {
+      "col_type": 2,
+      "eval_idx": 0
+    },
+    {
+      "col_type": 2,
+      "eval_idx": 1
+    }
+  ],
+  "trash_constraint_exprs": [
+    [
+      [
+        {
+          "op": "Fixed",
+          "query_index": 6
+        },
+        {
+          "op": "Advice",
+          "query_index": 5
+        },
+        {
+          "op": "Negated"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "7187783336232d8eae6dd94e05a5456368c59697f00e661feb822e0302a40b59"
+        },
+        {
+          "op": "Advice",
+          "query_index": 0
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Constant",
+          "value": "6fa7a0552a96ea758ec9ca714e744a95c57cf4e22e1011741f80c3afe489f752"
+        },
+        {
+          "op": "Advice",
+          "query_index": 1
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "a8e11f1d33242028553c2501092b4bcbb10f09ec7f55830708c0aae32fdd0935"
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "f2c1d0a004f17f586dc0adcf6488fc3d70f2579c447268bd9c57e5ec46803f33"
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "a50ca65179000e49fc2c2f80c9871926c67eef14e86ea77aa4b86a2b23982c41"
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "0e79993cc3bd5e9d1953876a6aecba5654fe9fd90fd1a5056bba90d436edfd53"
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "346ddd10839b7f9a8ff8d715ba8134b0e8f1c78ae6e4bda2123c7fd8c7b1cc06"
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "c1ede1a0ae34cd3e0b08911560337f00b48e54bf798725beda64667adfc4053f"
+        },
+        {
+          "op": "Advice",
+          "query_index": 10
+        },
+        {
+          "op": "Advice",
+          "query_index": 10
+        },
+        {
+          "op": "Advice",
+          "query_index": 10
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 10
+        },
+        {
+          "op": "Advice",
+          "query_index": 10
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Sum"
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 7
+        },
+        {
+          "op": "Advice",
+          "query_index": 6
+        },
+        {
+          "op": "Negated"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "5d1a0f3c3aec3c211295209acd24ec9145a7da6e1a9b5df78bbb8ca262c21f5b"
+        },
+        {
+          "op": "Advice",
+          "query_index": 0
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Constant",
+          "value": "288035ac41ff25a371fa84b200227cd48b33d8affdb035956da0fdc3f9a70e4d"
+        },
+        {
+          "op": "Advice",
+          "query_index": 1
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "10eb18b8231d649a0236ebf6a45ef08a5afa059606c67ce1207cf4163e22cc26"
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "258d830ec39816c69a65de0d8f7a5466cda50f0c314e54c18474565ea423e831"
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "85ba69445d81ef4bc639a4c00a8861631f2d3e0d272039199219a91e36205a27"
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "01f733969d4557e52fa1a855e35c39924b690250a2c3edb19740ceb4ba153a5f"
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "cd2efbc2412edf1a35f2d0bbf1dbdeaa4a48f6dd1c24c42c1177459b6ff51c30"
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "1f1a7f638cfca8e2b448438319b50b6d495d0341c688935afa5950a54d66df0f"
+        },
+        {
+          "op": "Advice",
+          "query_index": 10
+        },
+        {
+          "op": "Advice",
+          "query_index": 10
+        },
+        {
+          "op": "Advice",
+          "query_index": 10
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 10
+        },
+        {
+          "op": "Advice",
+          "query_index": 10
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Sum"
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 8
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Negated"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "4091c4907ec55df90a735ab601ad9731035d5cf4474ae2434321a6cdbe3d1d5e"
+        },
+        {
+          "op": "Advice",
+          "query_index": 0
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Constant",
+          "value": "8aa75a2f00b9c77df35489ae5f6dcb4412c6a57ee79618939daf53fc9c2fd76b"
+        },
+        {
+          "op": "Advice",
+          "query_index": 1
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "dbe09df98eb84fbbd9468ed59cbdff1e83ef4b05a980f8ca7ba05f3aaac59749"
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Sum"
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 9
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Negated"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "c13479e922308b47eb3cbed034b087492cfe8dfae902b419eedf5304e7832e22"
+        },
+        {
+          "op": "Advice",
+          "query_index": 0
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Constant",
+          "value": "9171d0655856e36927e3da2ae1cf87c90e469a4003ca338fb22657f987ccc226"
+        },
+        {
+          "op": "Advice",
+          "query_index": 1
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "7202786db7725436391ed2e375e4ba8ac3a0903b8fef6cdd2001768a93d08243"
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "dbe09df98eb84fbbd9468ed59cbdff1e83ef4b05a980f8ca7ba05f3aaac59749"
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Sum"
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 1
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Negated"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "4b2e2087fa81a1852da5e30f05cd1e282ba825ae860b63558184496750f16d72"
+        },
+        {
+          "op": "Advice",
+          "query_index": 0
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Constant",
+          "value": "2055f0a907b47ce64d78cd557e0e3332d30bf2b07ec812c98728aaf91a2e8224"
+        },
+        {
+          "op": "Advice",
+          "query_index": 1
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "29eab13e8e55dcee905af86a61dba956fb25afb1a643b5bfb8968f9d1080524e"
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "7202786db7725436391ed2e375e4ba8ac3a0903b8fef6cdd2001768a93d08243"
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "dbe09df98eb84fbbd9468ed59cbdff1e83ef4b05a980f8ca7ba05f3aaac59749"
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Sum"
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Negated"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "a7517716128309f32b58e0ecf364511f4805519e0fcf6dd21bcfc669b108592f"
+        },
+        {
+          "op": "Advice",
+          "query_index": 0
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Constant",
+          "value": "27e8c6c7d733d0e5ef840160623f77aaae83ffd8b8d5e4226a722d944b68a623"
+        },
+        {
+          "op": "Advice",
+          "query_index": 1
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "4e8df917fe8f7e1fc05baf9394a35de623331d981d357b95ab9d6a3db3b48119"
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "29eab13e8e55dcee905af86a61dba956fb25afb1a643b5bfb8968f9d1080524e"
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "7202786db7725436391ed2e375e4ba8ac3a0903b8fef6cdd2001768a93d08243"
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "dbe09df98eb84fbbd9468ed59cbdff1e83ef4b05a980f8ca7ba05f3aaac59749"
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Sum"
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 10
+        },
+        {
+          "op": "Negated"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "4a27c791b0bb7f4f41f3da51dd67fcb6dbe3a12e97c09efca739f55919a4056d"
+        },
+        {
+          "op": "Advice",
+          "query_index": 0
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Constant",
+          "value": "490834384d59744b9678e0d21e518506e49ab9041954c1196d2ac4269211e727"
+        },
+        {
+          "op": "Advice",
+          "query_index": 1
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "33052f8279cda4f826e825fbe66466a3e359ab85a8d744aa526345a8464cd900"
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "4e8df917fe8f7e1fc05baf9394a35de623331d981d357b95ab9d6a3db3b48119"
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "29eab13e8e55dcee905af86a61dba956fb25afb1a643b5bfb8968f9d1080524e"
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "7202786db7725436391ed2e375e4ba8ac3a0903b8fef6cdd2001768a93d08243"
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "dbe09df98eb84fbbd9468ed59cbdff1e83ef4b05a980f8ca7ba05f3aaac59749"
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Sum"
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 7
+        },
+        {
+          "op": "Negated"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "336638ef4739b43ce71ea1f13fbb44956a762a1c9bccac0f654da633a7f2d870"
+        },
+        {
+          "op": "Advice",
+          "query_index": 0
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Constant",
+          "value": "6102560f5c67b5c6182459af026529e2ae49d79eac814893bb2225eb9f38fa40"
+        },
+        {
+          "op": "Advice",
+          "query_index": 1
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "3e0dc511b9d293936410c14b82af4263e51a301ef5295e0c416121655b34611f"
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Advice",
+          "query_index": 2
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "33052f8279cda4f826e825fbe66466a3e359ab85a8d744aa526345a8464cd900"
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Advice",
+          "query_index": 3
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "4e8df917fe8f7e1fc05baf9394a35de623331d981d357b95ab9d6a3db3b48119"
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Advice",
+          "query_index": 4
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "29eab13e8e55dcee905af86a61dba956fb25afb1a643b5bfb8968f9d1080524e"
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Advice",
+          "query_index": 8
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "7202786db7725436391ed2e375e4ba8ac3a0903b8fef6cdd2001768a93d08243"
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Constant",
+          "value": "dbe09df98eb84fbbd9468ed59cbdff1e83ef4b05a980f8ca7ba05f3aaac59749"
+        },
+        {
+          "op": "Advice",
+          "query_index": 10
+        },
+        {
+          "op": "Advice",
+          "query_index": 10
+        },
+        {
+          "op": "Advice",
+          "query_index": 10
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Advice",
+          "query_index": 10
+        },
+        {
+          "op": "Advice",
+          "query_index": 10
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Product"
+        },
+        {
+          "op": "Sum"
+        },
+        {
+          "op": "Sum"
+        }
+      ]
+    ]
+  ],
+  "trash_selectors": [
+    [
+      {
+        "op": "Fixed",
+        "query_index": 18
+      }
+    ]
+  ]
+}

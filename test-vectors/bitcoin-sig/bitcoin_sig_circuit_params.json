@@ -1,0 +1,12 @@
+{
+  "num_advice_columns": 9,
+  "num_advice_queries": 25,
+  "num_blinding_commitments": 0,
+  "num_fixed_queries": 42,
+  "num_lookups": 7,
+  "num_permutation_commitments": 12,
+  "num_permutation_product_evals": 11,
+  "num_quotient_commitments": 4,
+  "num_rotation_sets": 5,
+  "permutation_chunk_size": 3
+}

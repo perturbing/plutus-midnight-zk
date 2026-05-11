@@ -1,0 +1,2594 @@
+{
+  "gate_polys": [
+    [
+      {
+        "op": "Fixed",
+        "query_index": 16
+      },
+      {
+        "op": "Fixed",
+        "query_index": 9
+      },
+      {
+        "op": "Fixed",
+        "query_index": 1
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Fixed",
+        "query_index": 2
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Fixed",
+        "query_index": 3
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Fixed",
+        "query_index": 4
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Fixed",
+        "query_index": 5
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Fixed",
+        "query_index": 6
+      },
+      {
+        "op": "Advice",
+        "query_index": 5
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Fixed",
+        "query_index": 7
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Fixed",
+        "query_index": 8
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 17
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 18
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Fixed",
+        "query_index": 1
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 5
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 18
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Fixed",
+        "query_index": 2
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 6
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 18
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Fixed",
+        "query_index": 3
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 7
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 21
+      },
+      {
+        "op": "Advice",
+        "query_index": 11
+      },
+      {
+        "op": "Advice",
+        "query_index": 12
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000040000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 14
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000100000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 6
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0200000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000040000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 13
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000100000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 5
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 22
+      },
+      {
+        "op": "Advice",
+        "query_index": 11
+      },
+      {
+        "op": "Advice",
+        "query_index": 12
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000040000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 14
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000100000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 6
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0200000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000040000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 13
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000100000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 5
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 22
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 23
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000000010000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000010000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 11
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000400000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 12
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000040000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000040000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000040000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 11
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 12
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000400000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 12
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000100000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000100000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 11
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000040000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 13
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000100000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 5
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0200000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000040000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 14
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000100000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 6
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 24
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000001000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 15
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000040000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 11
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0040000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 12
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0004000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000004000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000040000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 15
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000001000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 11
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "1000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 12
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000010000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 12
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000010000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000400000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0040000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 15
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 11
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000040000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 13
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000100000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 5
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0200000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000040000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 14
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000100000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 6
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 25
+      },
+      {
+        "op": "Constant",
+        "value": "0000000004000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 11
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000001000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 12
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000004000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000001000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0040000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0001000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 7
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 15
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000000001000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 15
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000000400000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 16
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000400000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 11
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000100000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 12
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000400000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000100000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "4000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 7
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000000040000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000000100000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000040000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 7
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000004000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 15
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000001000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 16
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "1000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 11
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0400000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 12
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000040000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 13
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000100000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 5
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0200000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000040000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 14
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000100000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 6
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 26
+      },
+      {
+        "op": "Constant",
+        "value": "0000100000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 11
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000040000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 12
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000010000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0040000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000000400000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000100000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 7
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000010000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 15
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000004000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 16
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "4000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 11
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "1000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 12
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0400000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000000040000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000000010000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000400000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000010000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 7
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000001000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 15
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000400000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 16
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0400000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 11
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 12
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000040000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 13
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000100000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 5
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0200000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000040000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 14
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000100000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 6
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 27
+      },
+      {
+        "op": "Constant",
+        "value": "0000200000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 17
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0004000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 9
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 18
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 19
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 28
+      },
+      {
+        "op": "Constant",
+        "value": "0000400000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 17
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0020000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 20
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0400000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 9
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 10
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 19
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 28
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000100000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 13
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000400000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 14
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "1000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 29
+      },
+      {
+        "op": "Constant",
+        "value": "0000000200000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 17
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0020000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 20
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0008000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 9
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "4000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 10
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 18
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 19
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 29
+      },
+      {
+        "op": "Constant",
+        "value": "0000000000000400000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 13
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000000400000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 14
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000400000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 0
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0010000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 1
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 5
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 2
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 30
+      },
+      {
+        "op": "Constant",
+        "value": "0000100000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 17
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Constant",
+        "value": "0000080000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 21
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000040000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 8
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0000020000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 22
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0004000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 20
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "8000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 9
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Constant",
+        "value": "0800000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Advice",
+        "query_index": 10
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 18
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 19
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 30
+      },
+      {
+        "op": "Advice",
+        "query_index": 21
+      },
+      {
+        "op": "Advice",
+        "query_index": 21
+      },
+      {
+        "op": "Constant",
+        "value": "0100000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 30
+      },
+      {
+        "op": "Advice",
+        "query_index": 8
+      },
+      {
+        "op": "Advice",
+        "query_index": 8
+      },
+      {
+        "op": "Constant",
+        "value": "0100000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 30
+      },
+      {
+        "op": "Advice",
+        "query_index": 22
+      },
+      {
+        "op": "Advice",
+        "query_index": 22
+      },
+      {
+        "op": "Constant",
+        "value": "0100000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Product"
+      }
+    ],
+    [
+      {
+        "op": "Fixed",
+        "query_index": 31
+      },
+      {
+        "op": "Advice",
+        "query_index": 11
+      },
+      {
+        "op": "Advice",
+        "query_index": 12
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 3
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 4
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 7
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 15
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 16
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Advice",
+        "query_index": 19
+      },
+      {
+        "op": "Advice",
+        "query_index": 23
+      },
+      {
+        "op": "Constant",
+        "value": "0000000001000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "op": "Product"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Negated"
+      },
+      {
+        "op": "Sum"
+      },
+      {
+        "op": "Product"
+      }
+    ]
+  ],
+  "lookup_input_exprs": [
+    [
+      [
+        {
+          "op": "Fixed",
+          "query_index": 10
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 19
+        },
+        {
+          "op": "Advice",
+          "query_index": 1
+        },
+        {
+          "op": "Product"
+        }
+      ]
+    ],
+    [
+      [
+        {
+          "op": "Fixed",
+          "query_index": 20
+        },
+        {
+          "op": "Fixed",
+          "query_index": 6
+        },
+        {
+          "op": "Product"
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 20
+        },
+        {
+          "op": "Advice",
+          "query_index": 9
+        },
+        {
+          "op": "Product"
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 20
+        },
+        {
+          "op": "Advice",
+          "query_index": 0
+        },
+        {
+          "op": "Product"
+        }
+      ]
+    ],
+    [
+      [
+        {
+          "op": "Fixed",
+          "query_index": 20
+        },
+        {
+          "op": "Fixed",
+          "query_index": 7
+        },
+        {
+          "op": "Product"
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 20
+        },
+        {
+          "op": "Advice",
+          "query_index": 10
+        },
+        {
+          "op": "Product"
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 20
+        },
+        {
+          "op": "Advice",
+          "query_index": 1
+        },
+        {
+          "op": "Product"
+        }
+      ]
+    ]
+  ],
+  "lookup_table_exprs": [
+    [
+      [
+        {
+          "op": "Fixed",
+          "query_index": 11
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 12
+        }
+      ]
+    ],
+    [
+      [
+        {
+          "op": "Fixed",
+          "query_index": 13
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 14
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 15
+        }
+      ]
+    ],
+    [
+      [
+        {
+          "op": "Fixed",
+          "query_index": 13
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 14
+        }
+      ],
+      [
+        {
+          "op": "Fixed",
+          "query_index": 15
+        }
+      ]
+    ]
+  ],
+  "perm_col_types": [
+    {
+      "col_type": 1,
+      "eval_idx": 0
+    },
+    {
+      "col_type": 0,
+      "eval_idx": 0
+    },
+    {
+      "col_type": 0,
+      "eval_idx": 1
+    },
+    {
+      "col_type": 0,
+      "eval_idx": 2
+    },
+    {
+      "col_type": 0,
+      "eval_idx": 3
+    },
+    {
+      "col_type": 0,
+      "eval_idx": 4
+    },
+    {
+      "col_type": 2,
+      "eval_idx": 0
+    },
+    {
+      "col_type": 2,
+      "eval_idx": 1
+    },
+    {
+      "col_type": 0,
+      "eval_idx": 8
+    }
+  ],
+  "trash_constraint_exprs": [],
+  "trash_selectors": []
+}
