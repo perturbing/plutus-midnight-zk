@@ -45,11 +45,29 @@ let
   # Haskell.nix based executables
 
   packages = {
-    plutus-midnight-zk-main = project.flake'.packages."plutus-midnight-zk:exe:main";
+    plutus-midnight-zk-run-vector-test = project.flake'.packages."plutus-midnight-zk:test:run-vector-test";
     rust-midnight-zk-write-test-vectors = rust-midnight-zk;
   };
 
   apps = {
+    plutus-midnight-zk-run-vector-test =
+      let
+        testBin = project.flake'.packages."plutus-midnight-zk:test:run-vector-test";
+        # The test binary resolves test vectors as "../test-vectors/" relative to
+        # its CWD, so it must run from the plutus-midnight-zk/ subdirectory.
+        # When invoked from the repo root (the common case for `nix run`), step
+        # into that subdirectory first; when already there, run in place.
+        wrapper = pkgs.writeShellScript "run-vector-test" ''
+          if [ -d "plutus-midnight-zk" ]; then
+            cd plutus-midnight-zk
+          fi
+          exec "${testBin}/bin/run-vector-test" "$@"
+        '';
+      in
+      {
+        type = "app";
+        program = "${wrapper}";
+      };
     rust-midnight-zk-write-test-vectors = {
       type = "app";
       program = "${rust-midnight-zk}/bin/write-test-vectors";

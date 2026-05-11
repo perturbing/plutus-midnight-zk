@@ -4,8 +4,135 @@ use ff::{Field, PrimeField};
 use group::GroupEncoding;
 use std::fs;
 use midnight_curves::{Bls12, Fq};
-use midnight_proofs::{plonk::VerifyingKey, poly::kzg::KZGCommitmentScheme};
+use midnight_proofs::{
+    plonk::{Any, ConstraintSystem, Expression, VerifyingKey},
+    poly::kzg::KZGCommitmentScheme,
+};
 use crate::rotation_sets::rotation_sets_bytes;
+
+// ── Gate-expression serialisation ─────────────────────────────────────────────
+
+/// Emit an `Expression<Fq>` as a flat RPN sequence of human-readable instruction
+/// objects into `out`.  Each instruction is a JSON object with an `"op"` field
+/// and any operands.  Example output for `a * b + c`:
+/// ```json
+/// [{"op":"Advice","query_index":0},
+///  {"op":"Advice","query_index":1},
+///  {"op":"Product"},
+///  {"op":"Advice","query_index":2},
+///  {"op":"Sum"}]
+/// ```
+///
+/// Op reference:
+///   Constant  {"op":"Constant","value":"<32-byte LE hex>"}
+///   Advice    {"op":"Advice",   "query_index":<uint>}
+///   Fixed     {"op":"Fixed",    "query_index":<uint>}
+///   Instance  {"op":"Instance", "query_index":<uint>}
+///   Challenge {"op":"Challenge","index":<uint>}
+///   Negated   {"op":"Negated"}
+///   Sum       {"op":"Sum"}
+///   Product   {"op":"Product"}
+///   Scaled    {"op":"Scaled",   "factor":"<32-byte LE hex>"}
+fn emit_json_instrs(expr: &Expression<Fq>, out: &mut Vec<serde_json::Value>) {
+    match expr {
+        Expression::Constant(f) => {
+            out.push(serde_json::json!({
+                "op": "Constant",
+                "value": to_hex(f.to_repr().as_ref()),
+            }));
+        }
+        Expression::Selector(_) => {
+            unreachable!("Selector in finalized VK gate poly — should have been compiled away");
+        }
+        Expression::Fixed(q) => {
+            out.push(serde_json::json!({
+                "op": "Fixed",
+                "query_index": q.index().expect("unresolved Fixed query index in VK"),
+            }));
+        }
+        Expression::Advice(q) => {
+            out.push(serde_json::json!({
+                "op": "Advice",
+                "query_index": q.index.expect("unresolved Advice query index in VK"),
+            }));
+        }
+        Expression::Instance(q) => {
+            out.push(serde_json::json!({
+                "op": "Instance",
+                "query_index": q.index.expect("unresolved Instance query index in VK"),
+            }));
+        }
+        Expression::Challenge(c) => {
+            out.push(serde_json::json!({
+                "op": "Challenge",
+                "index": c.index(),
+            }));
+        }
+        Expression::Negated(a) => {
+            emit_json_instrs(a, out);
+            out.push(serde_json::json!({"op": "Negated"}));
+        }
+        Expression::Sum(a, b) => {
+            emit_json_instrs(a, out);
+            emit_json_instrs(b, out);
+            out.push(serde_json::json!({"op": "Sum"}));
+        }
+        Expression::Product(a, b) => {
+            emit_json_instrs(a, out);
+            emit_json_instrs(b, out);
+            out.push(serde_json::json!({"op": "Product"}));
+        }
+        Expression::Scaled(a, f) => {
+            emit_json_instrs(a, out);
+            out.push(serde_json::json!({
+                "op": "Scaled",
+                "factor": to_hex(f.to_repr().as_ref()),
+            }));
+        }
+    }
+}
+
+/// Serialise one `Expression<Fq>` as a flat RPN JSON array of instruction objects.
+fn expr_to_json_instrs(expr: &Expression<Fq>) -> serde_json::Value {
+    let mut instructions = Vec::new();
+    emit_json_instrs(expr, &mut instructions);
+    serde_json::Value::Array(instructions)
+}
+
+/// Compute the `(col_type, eval_idx)` for one permutation column.
+///
+/// `col_type`: 0 = Advice, 1 = Fixed, 2 = Instance.
+/// `eval_idx`: position in `cs.advice_queries()` / `cs.fixed_queries()` /
+///             `cs.instance_queries()` at Rotation(0) for this column.
+fn perm_col_entry(col: midnight_proofs::plonk::Column<Any>, cs: &ConstraintSystem<Fq>) -> (u8, u32) {
+    let col_idx = col.index();
+    match col.column_type() {
+        Any::Advice(_) => {
+            let ei = cs.advice_queries()
+                .iter()
+                .position(|(c, r)| c.index() == col_idx && r.0 == 0)
+                .unwrap_or_else(|| panic!("advice perm col {col_idx} not queried at rot 0"))
+                as u32;
+            (0, ei)
+        }
+        Any::Fixed => {
+            let ei = cs.fixed_queries()
+                .iter()
+                .position(|(c, r)| c.index() == col_idx && r.0 == 0)
+                .unwrap_or_else(|| panic!("fixed perm col {col_idx} not queried at rot 0"))
+                as u32;
+            (1, ei)
+        }
+        Any::Instance => {
+            let ei = cs.instance_queries()
+                .iter()
+                .position(|(c, r)| c.index() == col_idx && r.0 == 0)
+                .unwrap_or_else(|| panic!("instance perm col {col_idx} not queried at rot 0"))
+                as u32;
+            (2, ei)
+        }
+    }
+}
 
 fn to_hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
@@ -73,12 +200,11 @@ pub fn proof_to_json(proof: &[u8], p: &CircuitParams) -> serde_json::Value {
         (0..p.nh).map(|_| r.g1()).collect();
 
     // ── Evaluations ───────────────────────────────────────────────────────
-    // TODO: instance_poly_eval is always zero in current test vectors.  This may be
-    // because format_committed_instances returns [] (no committed instance columns),
-    // with public inputs travelling via verifier-side Lagrange interpolation instead —
-    // but this interpretation of the code may be wrong.  Revisit if/when the Plutus
-    // verifier moves into this codebase.
-    let instance_poly_eval     = r.scalar();
+    // instance_poly_eval: midnight-zk does not use committed instances (col 0 is the
+    // zero polynomial); the value is always 0x00…00.  We consume the 32 bytes from the
+    // proof stream to keep subsequent offsets correct, but do not write it to JSON —
+    // the Haskell verifier hardcodes 0 and the transcript absorbs that constant directly.
+    r.scalar(); // consume & discard instance_poly_eval (always 0)
     let advice_evals: Vec<_>  = (0..p.naq).map(|_| r.scalar()).collect();
     let fixed_evals: Vec<_>   = (0..p.nfq).map(|_| r.scalar()).collect();
     let random_eval            = r.scalar();
@@ -131,7 +257,6 @@ pub fn proof_to_json(proof: &[u8], p: &CircuitParams) -> serde_json::Value {
         "trash_commitments":             trash_commitments,
         "random_poly_commitment":        random_poly_commitment,
         "h_commitments":                 h_commitments,
-        "instance_poly_eval":            instance_poly_eval,
         "advice_evals":                  advice_evals,
         "fixed_evals":                   fixed_evals,
         "random_eval":                   random_eval,
@@ -348,14 +473,20 @@ pub fn write_json_circuit_artifacts(
     p
 }
 
-/// Write all five Plutus artifact files for a circuit into `dir` as JSON.
+/// Write all six Plutus artifact files for a circuit into `dir` as JSON.
 ///
 /// Files written:
-///   `{name}_plutus_vk.json`       – Plutus verifying key (structured)
-///   `{name}_circuit_params.json`  – 10 circuit-structure scalars
-///   `{name}_rotation_sets.json`   – rotation-set metadata (hex)
-///   `{name}_plutus_proof.json`    – proof bytes (hex)
-///   `{name}_plutus_instance.json` – public inputs as array of 32-byte LE hex strings
+///   `{name}_plutus_vk.json`            – trusted-setup-dependent fields (commitments, SRS, Ω)
+///   `{name}_circuit_constraint.json`   – circuit-structure fields (gate polys, perm types, δ)
+///   `{name}_circuit_params.json`       – 10 scalar circuit dimensions
+///   `{name}_rotation_sets.json`        – rotation-set metadata
+///   `{name}_plutus_proof.json`         – proof bytes (structured)
+///   `{name}_plutus_instance.json`      – public inputs as 32-byte LE hex strings
+///
+/// The VK and circuit_constraint files are deliberately separated:
+///   * VK fields change when you redo the trusted setup (new SRS).
+///   * circuit_constraint fields change only when you redesign the circuit.
+///   This mirrors the rotation_sets separation and makes auditing easier.
 ///
 /// Does not use `write_plutus_vk`; all VK fields are accessed via the public API.
 pub fn write_json_all_artifacts(
@@ -384,13 +515,11 @@ pub fn write_json_all_artifacts(
         let perm_commitments: Vec<String> = vk.permutation().commitments().iter()
             .map(|c| to_hex(c.to_bytes().as_ref()))
             .collect();
-        let advice_queries: Vec<serde_json::Value> = vk.cs().advice_queries().iter()
-            .map(|(col, rot)| serde_json::json!({ "col": col.index(), "rot": rot.0 }))
-            .collect();
-        let fixed_queries: Vec<serde_json::Value> = vk.cs().fixed_queries().iter()
-            .map(|(col, rot)| serde_json::json!({ "col": col.index(), "rot": rot.0 }))
-            .collect();
-
+        // ── Trusted-setup-dependent fields → *_plutus_vk.json ────────────────
+        // These change when you redo the SRS (trusted setup).
+        // advice_queries and fixed_queries are omitted: they are committed to via
+        // transcript_repr and their evaluation indices are pre-computed into
+        // eval_idxs in rotation_sets.json, so the verifier never needs them directly.
         let vk_json = serde_json::json!({
             "k":                    k,
             "fixed_commitments":    fixed_commitments,
@@ -401,14 +530,65 @@ pub fn write_json_all_artifacts(
             "num_perm_columns":     vk.cs().permutation().columns.len() as u32,
             "cs_degree":            vk.cs().degree() as u32,
             "num_lookups":          vk.cs().lookups().len() as u32,
-            "advice_queries":       advice_queries,
-            "fixed_queries":        fixed_queries,
             "s_g2":                 to_hex(s_g2_bytes),
             "omega":                to_hex(omega.to_repr().as_ref()),
         });
         let vk_out = serde_json::to_string_pretty(&vk_json).unwrap();
         fs::write(format!("{dir}/{name}_plutus_vk.json"), &vk_out)
             .expect("failed to write plutus_vk.json");
+
+        // ── Circuit-structure-dependent fields → *_circuit_constraint.json ──
+        // These change only when the circuit design changes, not with the SRS.
+        // Gate polynomials: flat RPN instruction arrays, one per gate poly (flattened across gates).
+        let gate_polys: Vec<serde_json::Value> = vk.cs().gates()
+            .iter()
+            .flat_map(|g| g.polynomials().iter().map(expr_to_json_instrs))
+            .collect();
+
+        // Permutation column types: (col_type, eval_idx) per perm column.
+        let perm_col_types: Vec<serde_json::Value> = vk.cs().permutation()
+            .get_columns()
+            .iter()
+            .map(|col| {
+                let (ct, ei) = perm_col_entry(*col, vk.cs());
+                serde_json::json!({ "col_type": ct, "eval_idx": ei })
+            })
+            .collect();
+
+        // Lookup input / table expressions: flat RPN instruction arrays.
+        let lookup_input_exprs: Vec<Vec<serde_json::Value>> = vk.cs().lookups()
+            .iter()
+            .map(|lk| lk.input_expressions().iter().map(expr_to_json_instrs).collect())
+            .collect();
+        let lookup_table_exprs: Vec<Vec<serde_json::Value>> = vk.cs().lookups()
+            .iter()
+            .map(|lk| lk.table_expressions().iter().map(expr_to_json_instrs).collect())
+            .collect();
+
+        // Trash argument selectors and constraint expressions: flat RPN instruction arrays.
+        let trash_selectors: Vec<serde_json::Value> = vk.cs().trashcans()
+            .iter()
+            .map(|t| expr_to_json_instrs(t.selector()))
+            .collect();
+        let trash_constraint_exprs: Vec<Vec<serde_json::Value>> = vk.cs().trashcans()
+            .iter()
+            .map(|t| t.constraint_expressions().iter().map(expr_to_json_instrs).collect())
+            .collect();
+
+        // Note: delta (= 7^{2^32} mod q, the coset generator) is a constant of the
+        // BLS12-381 scalar field definition and is hardcoded in the Haskell verifier
+        // as `bls12_381_scalar_delta` in BlsUtils.hs. It does not appear here.
+        let cc_json = serde_json::json!({
+            "gate_polys":             gate_polys,
+            "perm_col_types":         perm_col_types,
+            "lookup_input_exprs":     lookup_input_exprs,
+            "lookup_table_exprs":     lookup_table_exprs,
+            "trash_selectors":        trash_selectors,
+            "trash_constraint_exprs": trash_constraint_exprs,
+        });
+        let cc_out = serde_json::to_string_pretty(&cc_json).unwrap();
+        fs::write(format!("{dir}/{name}_circuit_constraint.json"), &cc_out)
+            .expect("failed to write circuit_constraint.json");
     }
 
     // circuit_params.json + rotation_sets.json + proof.json

@@ -1,49 +1,24 @@
 # plutus-midnight-zk
 
-A Plutus on-chain verifier for [midnight-zk](https://github.com/midnightntwrk/midnight-zk) circuits (GWC / PLONK over BLS12-381).
+A Plutus on-chain verifier for [midnight-zk](https://github.com/midnightntwrk/midnight-zk)
+circuits (GWC / Halo2 over BLS12-381), together with a Rust test-vector generator that
+proves and serialises all 10 example circuits.
 
-The repository has two components:
-
+```bash
+plutus-midnight-zk/   Haskell — Plutus verifier library + test suite
+rust-midnight-zk/     Rust    — test-vector generator (10 circuits)
+test-vectors/         JSON    — pre-generated artifacts (tracked in git)
 ```
-plutus-midnight-zk/   Haskell — Plutus verifier (TODO)
-rust-midnight-zk/     Rust    — test-vector generator
-```
 
-## Components
+---
 
-### `rust-midnight-zk` — test-vector generator
-
-Builds the binary `write-test-vectors`, which runs 10 example circuits through
-the full prove/verify cycle and writes the inputs the Plutus verifier needs for
-each one.  Five JSON files are produced per circuit under `test-vectors/<name>/`:
-
-| File | Contents |
-|---|---|
-| `*_plutus_vk.json` | Verifying key and SRS g2 commitment |
-| `*_circuit_params.json` | 10 integers describing the circuit layout (number of columns, lookups, etc.) |
-| `*_rotation_sets.json` | Rotation-set metadata for the GWC multiopen check |
-| `*_plutus_proof.json` | GWC proof parsed into named fields |
-| `*_plutus_instance.json` | Public input scalars as 32-byte little-endian hex strings |
-
-Circuits covered: Poseidon hash, SHA-256 preimage, ECC operations, Schnorr
-signature, native gadgets, set membership, RSA signature, Bitcoin BIP-340
-signature, Ethereum ECDSA signature, 4-of-5 ECDSA threshold signature.
-
-### `plutus-midnight-zk` — Plutus verifier
-
-**TODO** — will consume the JSON test vectors produced above to verify
-midnight-zk proofs on-chain.
-
-## Generating test vectors
+## Quick start
 
 ### Prerequisites — Filecoin SRS
 
 The circuits use the Filecoin trusted-setup parameters (SRS), which are not
-included in the repository.  They must be present under `examples/assets/`
-before running the generator, otherwise it will panic with a message about a
-missing SRS.
-
-The simplest way is to download the pre-parsed file directly:
+included in the repository. They must be present under `examples/assets/`
+before re-generating test vectors:
 
 ```bash
 mkdir -p examples/assets
@@ -51,18 +26,149 @@ curl -L -o examples/assets/bls_filecoin_2p19 \
   https://midnight-s3-fileshare-dev-eu-west-1.s3.eu-west-1.amazonaws.com/bls_filecoin_2p19
 ```
 
-### Running
+The pre-generated `test-vectors/` in the repository are sufficient to run the
+Haskell verifier without downloading the SRS.
+
+### Run the Plutus verifier test suite (no SRS needed)
+
+```bash
+nix run .#plutus-midnight-zk-run-vector-test
+```
+
+Or inside a dev shell:
+
+```bash
+nix develop
+cabal test run-vector-test
+```
+
+Expected output (20 lines — 2 per circuit × 10 circuits):
+
+```bash
+=== SHA-256 preimage ===
+PASS: valid proof accepted
+PASS: corrupted proof rejected
+=== Bitcoin Schnorr signature ===
+PASS: valid proof accepted
+PASS: corrupted proof rejected
+...
+All tests passed.
+```
+
+### Regenerate test vectors (requires SRS)
 
 ```bash
 nix run .#rust-midnight-zk-write-test-vectors
 ```
 
-Output is written to `test-vectors/` in the current directory by default.  Pass
-an alternative path as the first argument:
+Or inside a dev shell:
 
 ```bash
-nix run .#rust-midnight-zk-write-test-vectors -- /tmp/my-vectors
+cargo run --bin write-test-vectors
 ```
+
+---
+
+## Circuits
+
+| Circuit | Directory | Description |
+| ------- | --------- | ----------- |
+| Poseidon hash preimage | `poseidon/` | Poseidon-128 hash preimage knowledge |
+| SHA-256 preimage | `sha-preimage/` | SHA-256 preimage knowledge |
+| JubJub ECC | `ecc/` | JubJub elliptic-curve scalar multiplication |
+| Schnorr signature | `schnorr-sig/` | Schnorr signature via Poseidon + JubJub |
+| Native gadgets | `native-gadgets/` | Range checks and bit decomposition |
+| Multi-set membership | `membership/` | Multi-set membership via MapChip |
+| RSA signature | `rsa-sig/` | RSA-PKCS1 signature verification |
+| Bitcoin Schnorr | `bitcoin-sig/` | BIP-340 Schnorr signature |
+| Ethereum ECDSA | `ethereum-sig/` | Ethereum ECDSA signature (EIP-191) |
+| ECDSA threshold | `ecdsa-threshold/` | 4-of-5 threshold ECDSA |
+
+---
+
+## Test vector format
+
+Six JSON files are written per circuit under `test-vectors/<name>/`:
+
+| File | Contents |
+| ---- | -------- |
+| `*_plutus_vk.json` | **Trusted-setup-dependent**: fixed/perm commitments, SRS G2 point, transcript repr, domain params (k, ω, degree, queries) |
+| `*_circuit_constraint.json` | **Circuit-design-dependent**: gate polynomials, permutation column types, lookup and trash expressions (δ is a field constant — hardcoded in `BlsUtils.hs`) |
+| `*_circuit_params.json` | 10 integers describing the circuit layout (columns, lookups, chunks, etc.) |
+| `*_rotation_sets.json` | Rotation-set metadata for the GWC multi-point opening |
+| `*_plutus_proof.json` | GWC proof parsed into named fields (commitments and evaluations) |
+| `*_plutus_instance.json` | Public input scalars as 32-byte little-endian hex strings |
+
+The VK and circuit-constraint data are deliberately split: redoing the trusted setup (new
+SRS) produces a new `*_plutus_vk.json` but leaves `*_circuit_constraint.json` and
+`*_rotation_sets.json` unchanged.
+
+Gate polynomial expressions in `*_circuit_constraint.json` are stored as human-readable flat
+RPN instruction arrays so that the constraint system is auditable without tooling:
+
+```json
+"gate_polys": [
+  [
+    {"op": "Fixed", "query_index": 9},
+    {"op": "Advice", "query_index": 0},
+    {"op": "Advice", "query_index": 1},
+    {"op": "Product"},
+    {"op": "Sum"},
+    {"op": "Negated"}
+  ],
+  ...
+]
+```
+
+See `VERIFIER_SPEC.md` for the full instruction set and all JSON field definitions.
+
+---
+
+## Project structure
+
+```bash
+plutus-midnight-zk/
+  src/Plutus/Crypto/
+    BlsUtils.hs                  BLS12-381 field/group arithmetic helpers
+    MidnightZk/
+      Types.hs                   Proof, VerifyingKey, CircuitConfig, RotationSet*
+      Transcript.hs              PlutusBlake2b Fiat-Shamir transcript
+      Verifier.hs                assembleRotationSets + verifyGwc + computeHEval
+      JsonParser.hs              JSON → Haskell types (RPN arrays → GateExpr trees)
+  test/
+    Main.hs                      10-circuit test runner
+
+rust-midnight-zk/
+  src/
+    circuit_params.rs            JSON serialisation helpers (shared across circuits)
+    rotation_sets.rs             Rotation-set binary encoding
+    lib.rs
+  src/bin/
+    write_test_vectors.rs        Runs all 10 circuits and writes JSON artifacts
+
+test-vectors/
+  <circuit-name>/
+    *_plutus_vk.json             trusted-setup-dependent VK fields
+    *_circuit_constraint.json    circuit-design-dependent fields (gate polys, etc.)
+    *_circuit_params.json        10 scalar circuit dimensions
+    *_rotation_sets.json         GWC rotation-set metadata
+    *_plutus_proof.json          proof (commitments + evaluations)
+    *_plutus_instance.json       public inputs
+```
+
+---
+
+## Documentation
+
+Three markdown files cover the project at different levels of detail:
+
+| File | Audience | Purpose |
+| ---- | -------- | ------- |
+| `HALO2_EXPLAINER.md` | New readers | Intuitive end-to-end walkthrough: from encoding computation in gates, through KZG commitments and Fiat-Shamir, to the GWC multi-point opening. Start here if you are unfamiliar with Halo2. |
+| `CONSTRAINT_SYSTEM.md` | Protocol readers | Reference for the constraint system: gate/permutation/lookup/trash expressions, the Horner fold that assembles h(x), and a breakdown of what can be precomputed before seeing a proof. |
+| `VERIFIER_SPEC.md` | Auditors / implementers | Authoritative line-by-line specification: all JSON field definitions, transcript absorption order, rotation-set assembly, GWC algorithm, and KZG pairing check. Sufficient to independently re-implement or audit the verifier. |
+
+---
 
 ## Development shell
 
@@ -70,15 +176,14 @@ nix run .#rust-midnight-zk-write-test-vectors -- /tmp/my-vectors
 nix develop
 ```
 
-Provides Rust (nightly) and Haskell toolchains.  Within the shell you can also
-run the generator directly:
+Provides GHC 9.6, Cabal, and the Rust toolchain. Inside the shell:
 
 ```bash
+# Haskell
+cabal build
+cabal test run-vector-test
+
+# Rust
+cargo build
 cargo run --bin write-test-vectors
 ```
-
-## Nix cache
-
-Binary caches are configured in `flake.nix`.  The first build fetches the
-midnight-zk crates from GitHub (`midnightntwrk/midnight-zk`, branch `next`) and
-may take a while; subsequent builds are cached.
