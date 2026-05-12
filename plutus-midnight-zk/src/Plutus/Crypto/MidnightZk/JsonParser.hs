@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+{- HLINT ignore "Use lambda-case" -}
+
 {- | JSON parser for midnight-zk Plutus verifier artifacts.
 
 Reads the six JSON files produced by the Rust @write-test-vectors@ binary

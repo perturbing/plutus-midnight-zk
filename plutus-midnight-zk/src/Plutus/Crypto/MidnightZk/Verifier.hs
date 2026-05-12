@@ -108,6 +108,7 @@ import Plutus.Crypto.BlsUtils (
     MultiplicativeGroup (..),
     Scalar (..),
     bls12_381_scalar_delta,
+    bls12_381_scalar_prime,
     mkScalar,
  )
 import Plutus.Crypto.MidnightZk.Transcript (
@@ -141,7 +142,7 @@ import PlutusTx.Builtins (
     integerToByteString,
  )
 import PlutusTx.Foldable (foldl, sum)
-import PlutusTx.List (concat, concatMap, head, length, map, zip, zipWith, (!!))
+import PlutusTx.List (concatMap, drop, head, length, map, unzip, zip, zipWith, (!!))
 import PlutusTx.Numeric (
     AdditiveGroup (..),
     AdditiveMonoid (..),
@@ -157,6 +158,7 @@ import PlutusTx.Prelude (
     enumFromTo,
     error,
     fst,
+    modulo,
     otherwise,
     snd,
     ($),
@@ -230,11 +232,9 @@ verify vk specs prf pubInputs =
 
         -- Absorb lookup permuted-input and permuted-table commitments interleaved
         -- as [A'₀, S'₀, A'₁, S'₁, …]; squeeze β then γ.
-        td5 =
-            foldl
-                (<>)
-                td4s
-                (concat (zipWith (\a b -> [a, b]) (prfLookupInputComs prf) (prfLookupTableComs prf)))
+        -- zipWith (<>) pairs bytes as A'ᵢ<>S'ᵢ; foldl (<>) appends — same total
+        -- byte sequence as interleaving because ByteString (<>) is associative.
+        td5 = foldl (<>) td4s (zipWith (<>) (prfLookupInputComs prf) (prfLookupTableComs prf))
         (beta, td5s) = squeeze td5
         (gamma, td5ss) = squeeze td5s
 
@@ -440,14 +440,14 @@ computeHEval vk prf pubInputs x xnMinusOne y theta beta gamma trashChal =
         evalE e = evalGate e advEvals fixEvals instEvals
 
         l0 = head pubLagranges
-        lLast = lagrangeFromInv lLastOmg (allInvs !! np)
-        lBlind = sum (map (\j -> lagrangeFromInv (lBlindOmgs !! j) (allInvs !! (np + 1 + j))) (enumFromTo 0 (blinding - 1)))
+        restInvs0 = drop np allInvs
+        lLastInv = head restInvs0
+        lBlindInvs = drop 1 restInvs0
+        lBlind = sum (zipWith lagrangeFromInv lBlindOmgs lBlindInvs)
+        lLast = lagrangeFromInv lLastOmg lLastInv
+        hInv = lBlindInvs !! blinding
 
         activeRows = one - lLast - lBlind
-
-        -- ── Custom gate expressions ───────────────────────────────────────────
-
-        gateExprs = map evalE (vkGatePolys vk)
 
         -- ── Permutation expressions ───────────────────────────────────────────
 
@@ -478,76 +478,67 @@ computeHEval vk prf pubInputs x xnMinusOne y theta beta gamma trashChal =
         -- where δ = bls12_381_scalar_delta (7^{2^32} mod q), the BLS12-381 coset generator.
         permChunkConstraint j curDelta =
             let nc = chunkColCount j
-                -- left = z_j(ωx) * product over chunk columns
-                leftProd =
+                -- Single pass: compute leftProd, rightProd, nextDelta together,
+                -- sharing getPermColEval per column and using one enumFromTo.
+                (leftProd, rightProd, nextDelta) =
                     foldl
-                        ( \acc k ->
+                        ( \(lAcc, rAcc, cd) k ->
                             let gi = j * chunkSize + k
                                 ce = getPermColEval gi
                                 se = sigmaEval gi
-                             in acc * (ce + beta * se + gamma)
-                        )
-                        (ppEval j 1) -- z_j(ωx)
-                        (enumFromTo 0 (nc - 1))
-                -- δ^{j·chunkSize+k} is threaded as cd; no expModInteger per column.
-                (rightProd, nextDelta) =
-                    foldl
-                        ( \(acc, cd) k ->
-                            let ce = getPermColEval (j * chunkSize + k)
                                 shift = cd * beta * x
-                             in (acc * (ce + shift + gamma), cd * delta)
+                             in ( lAcc * (ce + beta * se + gamma)
+                                , rAcc * (ce + shift + gamma)
+                                , cd * delta
+                                )
                         )
-                        (ppEval j 0, curDelta)
+                        (ppEval j 1, ppEval j 0, curDelta)
                         (enumFromTo 0 (nc - 1))
              in (activeRows * (leftProd - rightProd), nextDelta)
 
-        permExprs =
-            -- l_0 · (1 − z_0(x)) = 0
-            [l0 * (one - ppEval 0 0)]
-                -- l_last · (z_l(x)² − z_l(x)) = 0
-                <> [lLast * (let zl = ppEval (numChunks - 1) 0 in zl * zl - zl)]
-                -- For j > 0: l_0 · (z_j(x) − z_{j-1}(ω^last · x)) = 0
-                <> map (\j -> l0 * (ppEval (j + 1) 0 - ppEval j 2)) (enumFromTo 0 (numChunks - 2))
-                -- Thread δ across chunks: start at δ^0 = one, no expModInteger needed.
-                <> fst (foldl (\(exprs, cd) j -> let (c, cd') = permChunkConstraint j cd in (exprs <> [c], cd')) ([], one) (enumFromTo 0 (numChunks - 1)))
+        -- ── Horner-fold all expressions with y ────────────────────────────────
+        -- Each section folds directly into the accumulator without building
+        -- an intermediate list — eliminates O(n) cons-cell allocations per section
+        -- and the O(numChunks²) list-append cost in the perm chunk loop.
 
-        -- ── Lookup expressions (5 per lookup) ────────────────────────────────
+        -- Gate: fold evalE directly over vkGatePolys, no intermediate list
+        hGate = foldl (\acc e -> acc * y + evalE e) zero (vkGatePolys vk)
 
-        lookupExprs = concatMap (lookupExprsForK vk prf l0 lLast activeRows theta beta gamma evalE) (enumFromTo 0 (numLookups - 1))
+        -- Perm: two fixed exprs, then numChunks-1 continuation exprs, then numChunks chunk exprs
+        hPerm =
+            let hP0 = hGate * y + l0 * (one - ppEval 0 0)
+                hP1 = hP0 * y + lLast * (let zl = ppEval (numChunks - 1) 0 in zl * zl - zl)
+                hP2 = foldl (\acc j -> acc * y + l0 * (ppEval (j + 1) 0 - ppEval j 2)) hP1 (enumFromTo 0 (numChunks - 2))
+                (result, _) = foldl (\(acc, cd) j -> let (c, cd') = permChunkConstraint j cd in (acc * y + c, cd')) (hP2, one) (enumFromTo 0 (numChunks - 1))
+             in result
 
-        -- ── Trash expressions ─────────────────────────────────────────────────
+        -- Lookup: each lookup's 5 exprs folded directly, no concatMap intermediate
+        hLookup = foldl (lookupHornerForK vk prf l0 lLast activeRows theta beta gamma evalE y) hPerm (enumFromTo 0 (numLookups - 1))
 
+        -- Trash: inline each trash expr, no intermediate map list
         numTrash = length (vkTrashSelectors vk)
-        trashExprs =
-            map
-                ( \t ->
+        hEvalSum =
+            foldl
+                ( \acc t ->
                     let trashE = mkScalar (prfTrashEvals prf !! t)
                         selE = evalE (vkTrashSelectors vk !! t)
                         consExprs = vkTrashConstraintExprs vk !! t
-                        compressed = foldl (\acc e -> acc * trashChal + evalE e) zero consExprs
-                     in compressed - (one - selE) * trashE
+                        compressed = foldl (\a e -> a * trashChal + evalE e) zero consExprs
+                     in acc * y + (compressed - (one - selE) * trashE)
                 )
+                hLookup
                 (enumFromTo 0 (numTrash - 1))
-
-        -- ── Horner-fold all expressions with y ────────────────────────────────
-        -- Rust convention: fold with (acc*y + e), first expr → highest power.
-        -- Fold gate, perm, lookup, trash sequentially to avoid a deep allExprs
-        -- thunk that GHC's lazy foldl may not handle well under Strict.
-        hGate = foldl (\acc e -> acc * y + e) zero gateExprs
-        hPerm = foldl (\acc e -> acc * y + e) hGate permExprs
-        hLookup = foldl (\acc e -> acc * y + e) hPerm lookupExprs
-        hEvalSum = foldl (\acc e -> acc * y + e) hLookup trashExprs
      in
         -- h(x) = hEvalSum / (x^n − 1)
         -- x is a random challenge outside the domain, so x^n ≠ 1 and the inversion is safe.
 
-        hEvalSum * (allInvs !! (np + 1 + blinding))
+        hEvalSum * hInv
 
-{- | Compute the 5 lookup expressions for lookup k.
-Extracted to a top-level helper to avoid deep nesting.
+{- | Horner-fold the 5 lookup expressions for lookup k into accumulator acc.
+Avoids building an intermediate list: returns acc*y^5 + e0*y^4 + ... + e4.
 -}
-{-# INLINEABLE lookupExprsForK #-}
-lookupExprsForK ::
+{-# INLINEABLE lookupHornerForK #-}
+lookupHornerForK ::
     VerifyingKey ->
     Proof ->
     Scalar -> -- l0
@@ -557,9 +548,11 @@ lookupExprsForK ::
     Scalar -> -- beta
     Scalar -> -- gamma
     (GateExpr -> Scalar) -> -- evalE
+    Scalar -> -- y (Horner challenge)
+    Scalar -> -- acc
     Integer -> -- k: lookup index
-    [Scalar]
-lookupExprsForK vk prf l0 lLast activeRows theta beta gamma evalE k =
+    Scalar
+lookupHornerForK vk prf l0 lLast activeRows theta beta gamma evalE y acc k =
     let
         luE fld = mkScalar (prfLookupEvals prf !! (5 * k + fld))
         prodEval = luE 0 -- z_k(x)
@@ -567,18 +560,12 @@ lookupExprsForK vk prf l0 lLast activeRows theta beta gamma evalE k =
         inputEval = luE 2 -- A'_k(x)
         inputInv = luE 3 -- A'_k(ω⁻¹·x)
         tableEval = luE 4 -- S'_k(x)
-
-        -- Horner-compress a list of expression instruction lists with theta:
-        -- result = θ^{m-1}·e_0 + θ^{m-2}·e_1 + … + e_{m-1}
-        -- which equals foldl (\acc e -> acc * theta + eval e) zero exprs
-        compressExprs = foldl (\acc e -> acc * theta + evalE e) zero
+        compressExprs = foldl (\a e -> a * theta + evalE e) zero
 
         inputArgs = compressExprs (vkLookupInputExprs vk !! k)
         tableArgs = compressExprs (vkLookupTableExprs vk !! k)
 
-        -- z_k(ωx) · (A'_k(x) + β) · (S'_k(x) + γ)
         leftProd = prodNext * (inputEval + beta) * (tableEval + gamma)
-        -- z_k(x) · (compressed_input + β) · (compressed_table + γ)
         rightProd = prodEval * (inputArgs + beta) * (tableArgs + gamma)
         e0 = l0 * (one - prodEval)
         e1 = lLast * (prodEval * prodEval - prodEval)
@@ -586,7 +573,7 @@ lookupExprsForK vk prf l0 lLast activeRows theta beta gamma evalE k =
         e3 = l0 * (inputEval - tableEval)
         e4 = activeRows * (inputEval - tableEval) * (inputEval - inputInv)
      in
-        [e0, e1, e2, e3, e4]
+        ((((acc * y + e0) * y + e1) * y + e2) * y + e3) * y + e4
 
 -- ===========================================================================
 -- Generic GWC core (circuit-agnostic)
@@ -623,8 +610,6 @@ verifyGwc ::
     Bool
 verifyGwc sG2 fCom x2 x3 x4 rotSets qE piPt =
     let
-        m = length rotSets
-
         -- ── Steps 6–7: Lagrange interpolants and GWC contributions ──────────
         --
         -- c_i = (q_i(x₃) − r_i(x₃)) / V_i(x₃),  V_i(x₃) = Π_{p ∈ Sᵢ} (x₃ − p)
@@ -639,9 +624,9 @@ verifyGwc sG2 fCom x2 x3 x4 rotSets qE piPt =
         --              den = (p₀−p₁)·(x₃−p₀)·(x₃−p₁)
         --   n≥3: num = qE − r(x₃),                   den = Π(x₃ − pⱼ)
 
-        numDens = zipWith (\rs qEi -> gwcNumDen (rsPoints rs) (rsQEvalsAtPts rs) qEi x3) rotSets qE
-        invDenoms = batchInverse (map snd numDens)
-        contribs = zipWith (\(n, _) inv -> n * inv) numDens invDenoms
+        (nums, dens) = unzip (zipWith (\rs qEi -> gwcNumDen (rsPoints rs) (rsQEvalsAtPts rs) qEi x3) rotSets qE)
+        invDenoms = batchInverse dens
+        contribs = zipWith (*) nums invDenoms
 
         -- ── Step 8: f(x₃) via Horner in x₂ ──────────────────────────────
         --
@@ -660,19 +645,27 @@ verifyGwc sG2 fCom x2 x3 x4 rotSets qE piPt =
         -- right  = Σᵢ Σ_j (x₄^i · x₁^j) · [poly_{i,j}]₁
         --            +  x₄^m · fCom  +  x₃ · π  −  vEval · G₁
         --
-        -- All commitment scalings are deferred from assembleRotationSets to here.
-        -- Multiplying rsComScalars[j] (= x₁^j) by x₄^i costs one scalar field mul
-        -- each; the whole expression is then a single Pippenger MSM, replacing
-        -- n individual EC scalar muls that would otherwise occur in getComPairs.
+        -- Single foldl threads the x₄ power, accumulates vEval, and builds
+        -- scalar/point lists by prepending (O(newItems) per step, no copies).
+        -- MSM commutativity (Σ sᵢ·Pᵢ) means reversed set order is correct.
 
-        x4Pows = powers x4 (m + 1) -- [1, x₄, …, x₄^m]
-        vEval = horner x4 (qE <> [fEval])
+        (revScalars, revPoints, x4m, vEvalQE) =
+            foldl
+                ( \(ss, ps, x4i, v) (rs, qEi) ->
+                    let x4i_int = unScalar x4i
+                     in ( map (\s -> (x4i_int * s) `modulo` bls12_381_scalar_prime) (rsComScalars rs) <> ss
+                        , rsComs rs <> ps
+                        , x4i * x4
+                        , v + x4i * qEi
+                        )
+                )
+                ([], [], one, zero)
+                (zip rotSets qE)
+        vEval = vEvalQE + x4m * fEval
         g1Gen = bls12_381_G1_uncompress bls12_381_G1_compressed_generator
         g2Gen = bls12_381_G2_uncompress bls12_381_G2_compressed_generator
-        allScalars =
-            concat (zipWith (\x4i rs -> map (unScalar . (x4i *)) (rsComScalars rs)) x4Pows rotSets)
-                <> [unScalar (x4Pows !! m), unScalar x3, unScalar (zero - vEval)]
-        allPoints = concatMap rsComs rotSets <> [fCom, piPt, g1Gen]
+        allScalars = unScalar x4m : unScalar x3 : unScalar (zero - vEval) : revScalars
+        allPoints = fCom : piPt : g1Gen : revPoints
         right = bls12_381_G1_multiScalarMul allScalars allPoints
      in
         bls12_381_finalVerify
@@ -744,9 +737,6 @@ assembleRotationSets vk prf specs x x1 xNext xPrev xLast hEval hSplit =
         omgInv = ccOmegaInv (vkConfig vk)
         blinding = ccBlinding (vkConfig vk)
 
-        -- Convert a raw integer rotation offset to the symbolic 'Rotation' ADT.
-        -- 'RotLast' is -(blinding+1), which is circuit-specific, so conversion
-        -- must happen here where 'ccBlinding' is available.
         toRotation :: Integer -> Rotation
         toRotation r
             | r == 0 = RotCur
@@ -777,8 +767,7 @@ assembleRotationSets vk prf specs x x1 xNext xPrev xLast hEval hSplit =
                     SKH ->
                         -- nh entries, scalar = x₁^j · hSplit^m for m = 0..nh-1
                         let nh = ccNumHPieces (vkConfig vk)
-                            hSplitPows = powers hSplit nh
-                         in (map (\m -> x1j * hSplitPows !! m) (enumFromTo 0 (nh - 1)), hPts)
+                         in (map (x1j *) (powers hSplit nh), hPts)
                     SKAdvice -> ([x1j], [advicePts !! i])
                     SKLookupTable -> ([x1j], [lookupTablePts !! i])
                     SKTrash -> ([x1j], [trashPts !! i])
@@ -789,11 +778,7 @@ assembleRotationSets vk prf specs x x1 xNext xPrev xLast hEval hSplit =
                     SKLookupProd -> ([x1j], [lookupProdPts !! i])
                     SKLookupInput -> ([x1j], [lookupInputPts !! i])
 
-        -- ── Evaluation of one slot at a given rotation position and offset ─
-        --
-        -- 'rotPos' is the 0-based index into 'rssRotations' for the current
-        -- evaluation point. Used by kinds 0 and 4 to index 'ssEvalIdxs' and
-        -- avoid a linear scan through a query map.
+        -- ── Evaluation of one slot at a given rotation position ─────────
         getEval :: SlotSpec -> Integer -> Rotation -> Scalar
         getEval ss rotPos rot =
             let i = ssIndex ss
@@ -801,13 +786,13 @@ assembleRotationSets vk prf specs x x1 xNext xPrev xLast hEval hSplit =
                 ppE fld = permProdEvalsRS !! (3 * i + fld)
              in case ssKind ss of
                     SKAdvice -> advEvalsRS !! (ssEvalIdxs ss !! rotPos)
-                    SKInstance -> zero -- instance_poly_eval always 0 in midnight-zk
-                    SKLookupTable -> luE 4 -- lookup table @ x (field 4)
-                    SKTrash -> trashEvalsRS !! i
                     SKFixed -> fixEvalsRS !! (ssEvalIdxs ss !! rotPos)
+                    SKLookupTable -> luE 4
+                    SKTrash -> trashEvalsRS !! i
                     SKPermSigma -> permSigEvalsRS !! i
                     SKH -> hEval
                     SKRandom -> randomEvalRS
+                    SKInstance -> zero
                     SKPermProd -> case rot of RotCur -> ppE 0; RotNext -> ppE 1; _ -> ppE 2
                     SKLookupProd -> case rot of RotCur -> luE 0; _ -> luE 1
                     SKLookupInput -> case rot of RotCur -> luE 2; _ -> luE 3
@@ -821,16 +806,12 @@ assembleRotationSets vk prf specs x x1 xNext xPrev xLast hEval hSplit =
                 nSlots = length slots
                 nRots = length rots
                 x1Powers = powers x1 nSlots
-                -- Collect (scalar, point) pairs; H expands to nh entries, all others 1.
                 pairs = zipWith getComPairs x1Powers slots
-                comScalars = concatMap fst pairs
+                comScalars = map unScalar (concatMap fst pairs)
                 coms = concatMap snd pairs
-                -- Combined eval per rotation point: q_i(p) = Σ_j x₁^j · poly_j(p)
-                -- Reuse x1Powers (already computed for comScalars) instead of
-                -- letting dotX1 rebuild x1^j from scratch for each rotation point.
                 qEvalsAtPts =
                     zipWith
-                        (\rotPos rot -> sum (zipWith (*) x1Powers (map (\ss -> getEval ss rotPos rot) slots)))
+                        (\rotPos rot -> sum (zipWith (\x1j ss -> x1j * getEval ss rotPos rot) x1Powers slots))
                         (enumFromTo 0 (nRots - 1))
                         rots
              in RotationSet
@@ -873,34 +854,32 @@ horner x2 (c : cs) = c + x2 * horner x2 cs
 Given n distinct points @ps = [p₀, …, p_{n−1}]@ and values @vs = [v₀, …, v_{n−1}]@,
 returns the unique polynomial r of degree < n evaluated at x₃:
 
-> r(x₃) = Σ_j  v_j · ∏_{k≠j} (x₃ − p_k) / (p_j − p_k)
+> r(x₃) = Σ_j  v_j · L_j(x₃)
+>
+> where L_j(x₃) = ∏_{k≠j} (x₃ − p_k) / (p_j − p_k)
 
-Special cases:
-  * n = 1: @r(x₃) = v₀@ (constant polynomial).
-  * n = 2: linear interpolation through two points.
-  * n = 3: quadratic interpolation through three points.
+Using the identity L_j(x₃) = V(x₃) / ((x₃ − p_j) · w_j)  where
+V(x₃) = ∏_k (x₃ − p_k) and w_j = ∏_{k≠j} (p_j − p_k):
+
+> r(x₃) = V(x₃) · Σ_j  v_j / ((x₃ − p_j) · w_j)
+
+The n denominators @(x₃ − p_j) · w_j@ are batch-inverted with one 'recip'
+call (Montgomery's trick), replacing the n individual 'recip' calls that a
+naive per-basis implementation would require.
 -}
 {-# INLINEABLE lagrange #-}
 lagrange :: [Scalar] -> [Scalar] -> Scalar -> Scalar
 lagrange [_] [v] _ = v
-lagrange ps vs x3 = sum (zipWith (\pj vj -> vj * lagrangeBasis ps pj x3) ps vs)
-
-{- | Lagrange basis polynomial L_j(x₃) = ∏_{k≠j} (x₃−p_k) / (p_j−p_k).
-Single pass: accumulate numerator and denominator separately, one recip at end.
--}
-{-# INLINEABLE lagrangeBasis #-}
-lagrangeBasis :: [Scalar] -> Scalar -> Scalar -> Scalar
-lagrangeBasis ps pj x3 =
-    let (num, den) =
-            foldl
-                ( \(n, d) pk ->
-                    if pk == pj
-                        then (n, d)
-                        else (n * (x3 - pk), d * (pj - pk))
-                )
-                (one, one)
-                ps
-     in num * recip den
+lagrange ps vs x3 =
+    -- diffs[j] = x3 - p_j;  bigV = Π diffs (vanishing poly)
+    let diffs = map (x3 -) ps
+        bigV = foldl (*) one diffs
+        -- bdens[j] = Π_{k≠j} (p_j - p_k)  (Lagrange basis denominator)
+        bdens = map (\pj -> foldl (\a pk -> if pk == pj then a else a * (pj - pk)) one ps) ps
+        -- combined[j] = (x3 - p_j) · Π_{k≠j}(p_j - p_k); invert all at once
+        invs = batchInverse (zipWith (*) diffs bdens)
+     in -- L_j(x3) = bigV · invs[j];  r(x3) = bigV · Σ_j v_j · invs[j]
+        bigV * sum (zipWith (*) vs invs)
 
 {- | GWC contribution for one rotation set.
 

@@ -198,8 +198,9 @@ data RotationSet = RotationSet
     {- ^ Actual field elements at which all polynomials in this set are
     evaluated: e.g. [x], [x, x·ω], [x, x·ω, x·ω⁻¹].
     -}
-    , rsComScalars :: [Scalar]
-    {- ^ Unscaled x₁^j factors, parallel to rsComs.
+    , rsComScalars :: [Integer]
+    {- ^ Unscaled x₁^j factors as raw integers (already reduced mod q), parallel to rsComs.
+    Stored unwrapped to avoid Scalar constructor/destructor overhead in the MSM hot path.
     H pieces carry x₁^j · hSplit^m; all other kinds carry x₁^j.
     The x₄^i weight is applied in 'verifyGwc' so that one mega-MSM covers
     all commitments without individual EC scalar multiplications.
