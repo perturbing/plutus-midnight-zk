@@ -32,7 +32,7 @@ runTest label dir name = do
         specs = parseRotationSets rsV
         pubInputs = parseInstance instV
 
-    resultE <- try (evaluate (verify vk proof specs pubInputs)) :: IO (Either SomeException Bool)
+    resultE <- try (evaluate (verify vk specs proof pubInputs)) :: IO (Either SomeException Bool)
     case resultE of
         Left ex -> error $ "EXCEPTION in verify: " ++ show ex
         Right True -> putStrLn "PASS: valid proof accepted"
@@ -45,7 +45,7 @@ runTest label dir name = do
                     [] -> error "no advice evals to corrupt"
                     (e : es) -> (e `xor` 1) : es
                 }
-    badResultE <- try (evaluate (verify vk corruptedProof specs pubInputs)) :: IO (Either SomeException Bool)
+    badResultE <- try (evaluate (verify vk specs corruptedProof pubInputs)) :: IO (Either SomeException Bool)
     case badResultE of
         Left _ -> putStrLn "PASS: corrupted proof raised exception (rejected)"
         Right False -> putStrLn "PASS: corrupted proof rejected"

@@ -11,7 +11,9 @@ repository cardano-haskell-packages
 
 index-state:
   , hackage.haskell.org 2025-06-03T08:07:10Z
-  , cardano-haskell-packages 2026-04-08T11:14:39Z
+  , cardano-haskell-packages 2026-05-08T13:26:45Z
 
 packages:
   plutus-midnight-zk
+
+benchmarks: true

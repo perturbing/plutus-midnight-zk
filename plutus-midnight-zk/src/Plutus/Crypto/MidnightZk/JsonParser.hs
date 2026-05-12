@@ -47,6 +47,7 @@ import Plutus.Crypto.MidnightZk.Types (
     GateExpr (..),
     Proof (..),
     RotationSetSpec (..),
+    SlotKind (..),
     SlotSpec (..),
     VerifyingKey (..),
  )
@@ -400,20 +401,20 @@ parsePlutusProof v =
 -- RotationSets parser
 -- ---------------------------------------------------------------------------
 
--- | Poly-kind name → integer discriminant (must match 'SlotSpec' in Types.hs).
-polyKindInt :: Text -> Integer
-polyKindInt "Advice" = 0
-polyKindInt "Instance" = 1
-polyKindInt "LookupTable" = 2
-polyKindInt "Trash" = 3
-polyKindInt "Fixed" = 4
-polyKindInt "PermSigma" = 5
-polyKindInt "H" = 6
-polyKindInt "Random" = 7
-polyKindInt "PermProd" = 8
-polyKindInt "LookupProd" = 9
-polyKindInt "LookupInput" = 10
-polyKindInt k = error $ "polyKindInt: unknown kind: " ++ T.unpack k
+-- | Poly-kind name → 'SlotKind'.
+polyKind :: Text -> SlotKind
+polyKind "Advice" = SKAdvice
+polyKind "Instance" = SKInstance
+polyKind "LookupTable" = SKLookupTable
+polyKind "Trash" = SKTrash
+polyKind "Fixed" = SKFixed
+polyKind "PermSigma" = SKPermSigma
+polyKind "H" = SKH
+polyKind "Random" = SKRandom
+polyKind "PermProd" = SKPermProd
+polyKind "LookupProd" = SKLookupProd
+polyKind "LookupInput" = SKLookupInput
+polyKind k = error $ "polyKind: unknown kind: " ++ T.unpack k
 
 -- | Parse @*_rotation_sets.json@.
 parseRotationSets :: Value -> [RotationSetSpec]
@@ -442,7 +443,7 @@ parseRotationSets v =
         evalIdxs <- (o .: "eval_idxs" :: Aeson.Parser [Integer])
         return
             SlotSpec
-                { ssKind = polyKindInt kindText
+                { ssKind = polyKind kindText
                 , ssIndex = idx
                 , ssEvalIdxs = evalIdxs
                 }

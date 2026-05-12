@@ -46,6 +46,7 @@ let
 
   packages = {
     plutus-midnight-zk-run-vector-test = project.flake'.packages."plutus-midnight-zk:test:run-vector-test";
+    plutus-midnight-zk-bench = project.flake'.packages."plutus-midnight-zk:bench:bench";
     rust-midnight-zk-write-test-vectors = rust-midnight-zk;
   };
 
@@ -62,6 +63,20 @@ let
             cd plutus-midnight-zk
           fi
           exec "${testBin}/bin/run-vector-test" "$@"
+        '';
+      in
+      {
+        type = "app";
+        program = "${wrapper}";
+      };
+    plutus-midnight-zk-bench =
+      let
+        benchBin = project.flake'.packages."plutus-midnight-zk:bench:bench";
+        wrapper = pkgs.writeShellScript "bench" ''
+          if [ -d "plutus-midnight-zk" ]; then
+            cd plutus-midnight-zk
+          fi
+          exec "${benchBin}/bin/bench" "$@"
         '';
       in
       {

@@ -41,6 +41,7 @@ module Plutus.Crypto.MidnightZk.Types (
     -- * Rotation sets (internal computation type, not on-chain)
     Rotation (..),
     RotationSet (..),
+    SlotKind (..),
     SlotSpec (..),
     RotationSetSpec (..),
 
@@ -217,24 +218,40 @@ data RotationSet = RotationSet
 -- Rotation set specs — parsed from rotation_sets.json (internal types)
 -- ---------------------------------------------------------------------------
 
-{- | Specification for one polynomial slot within a rotation set.
-Parsed from @*_rotation_sets.json@. The 'ssIndex' interpretation depends on 'ssKind':
+-- | Polynomial kind for a slot within a rotation set.
+data SlotKind
+    = -- | column index into 'prfAdviceComs'; eval via 'ssEvalIdxs'
+      SKAdvice
+    | -- | zero polynomial (commitment and eval are both zero)
+      SKInstance
+    | -- | k into 'prfLookupTableComs'
+      SKLookupTable
+    | -- | k into 'prfTrashComs'
+      SKTrash
+    | -- | column index into 'vkFixedComs'; eval via 'ssEvalIdxs'
+      SKFixed
+    | -- | k into 'vkPermSigmaComs'
+      SKPermSigma
+    | -- | uses all 'prfHComs' with hSplit scaling (index ignored)
+      SKH
+    | -- | random polynomial (index ignored)
+      SKRandom
+    | -- | chunk index into 'prfPermProdComs'
+      SKPermProd
+    | -- | k into 'prfLookupProdComs'
+      SKLookupProd
+    | -- | k into 'prfLookupInputComs'
+      SKLookupInput
+    deriving (Haskell.Show)
 
-  * 0 Advice:      column index into 'prfAdviceComs'; 'ssEvalIdxs[rotPos]' indexes 'prfAdviceEvals'
-  * 1 Instance:    (index ignored; uses G1 zero and eval = 0 hardcoded)
-  * 2 LookupTable: k into 'prfLookupTableComs'
-  * 3 Trash:       k into 'prfTrashComs'
-  * 4 Fixed:       column index into 'vkFixedComs'; 'ssEvalIdxs[rotPos]' indexes 'prfFixedEvals'
-  * 5 PermSigma:   k into 'vkPermSigmaComs'
-  * 6 H:           (index ignored; uses all 'prfHComs' with hSplit scaling)
-  * 7 Random:      (index ignored)
-  * 8 PermProd:    chunk index into 'prfPermProdComs'
-  * 9 LookupProd:  k into 'prfLookupProdComs'
-  * 10 LookupInput: k into 'prfLookupInputComs'
+makeLift ''SlotKind
+
+{- | Specification for one polynomial slot within a rotation set.
+Parsed from @*_rotation_sets.json@. The 'ssIndex' interpretation depends on 'ssKind'.
 -}
 data SlotSpec = SlotSpec
-    { ssKind :: Integer
-    -- ^ Poly kind discriminant (0–10). See above.
+    { ssKind :: SlotKind
+    -- ^ Polynomial kind.
     , ssIndex :: Integer
     -- ^ Primary index into the appropriate proof/VK array.
     , ssEvalIdxs :: [Integer]
@@ -244,6 +261,8 @@ data SlotSpec = SlotSpec
     -}
     }
     deriving (Haskell.Show)
+
+makeLift ''SlotSpec
 
 {- | Specification for one rotation set.
 Parsed from @*_rotation_sets.json@. Contains the rotation offsets (0, 1, -1,
@@ -256,6 +275,8 @@ data RotationSetSpec = RotationSetSpec
     -- ^ Polynomial slots in x₁-power order.
     }
     deriving (Haskell.Show)
+
+makeLift ''RotationSetSpec
 
 {- | Symbolic rotation offset, resolved from the raw integer stored in the JSON.
 

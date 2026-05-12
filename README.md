@@ -55,6 +55,34 @@ PASS: corrupted proof rejected
 All tests passed.
 ```
 
+### Run the script-size and ExUnit benchmarks (no SRS needed)
+
+```bash
+nix run .#plutus-midnight-zk-bench
+```
+
+Or inside a dev shell:
+
+```bash
+nix develop
+cabal bench bench
+```
+
+Expected output — script size and CEK execution units for each of the 10 circuits:
+
+```
+    n     Script size             CPU usage               Memory usage
+  ----------------------------------------------------------------------
+  SHA-256 preimage
+    -   <size> (<x.x%>)       <cpu> (<x.x%>)       <mem> (<x.x%>)
+  ...
+```
+
+Percentages are relative to the current Cardano mainnet transaction limits
+(`maxTxSize` = 16 384 bytes, `maxTxExSteps` = 10 000 000 000, `maxTxExMem` = 16 500 000).
+
+---
+
 ### Regenerate test vectors (requires SRS)
 
 ```bash
@@ -182,6 +210,7 @@ Provides GHC 9.6, Cabal, and the Rust toolchain. Inside the shell:
 # Haskell
 cabal build
 cabal test run-vector-test
+cabal bench bench
 
 # Rust
 cargo build

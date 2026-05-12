@@ -124,6 +124,7 @@ import Plutus.Crypto.MidnightZk.Types (
     Rotation (..),
     RotationSet (..),
     RotationSetSpec (..),
+    SlotKind (..),
     SlotSpec (..),
     VerifyingKey (..),
  )
@@ -185,8 +186,8 @@ The verifier performs ten steps:
   7–10. GWC contributions, f(x₃), finalCom/vEval, pairing — in 'verifyGwc'.
 -}
 {-# INLINEABLE verify #-}
-verify :: VerifyingKey -> Proof -> [RotationSetSpec] -> [Integer] -> Bool
-verify vk prf specs pubInputs =
+verify :: VerifyingKey -> [RotationSetSpec] -> Proof -> [Integer] -> Bool
+verify vk specs prf pubInputs =
     let
         cfg = vkConfig vk
         omg = ccOmega cfg
@@ -440,7 +441,7 @@ computeHEval vk prf pubInputs x xnMinusOne y theta beta gamma trashChal =
 
         l0 = head pubLagranges
         lLast = lagrangeFromInv lLastOmg (allInvs !! np)
-        lBlind = sum (map (\j -> lagrangeFromInv (lBlindOmgs !! j) (allInvs !! (np + 1 + j))) [0 .. blinding - 1])
+        lBlind = sum (map (\j -> lagrangeFromInv (lBlindOmgs !! j) (allInvs !! (np + 1 + j))) (enumFromTo 0 (blinding - 1)))
 
         activeRows = one - lLast - lBlind
 
@@ -487,7 +488,7 @@ computeHEval vk prf pubInputs x xnMinusOne y theta beta gamma trashChal =
                              in acc * (ce + beta * se + gamma)
                         )
                         (ppEval j 1) -- z_j(ωx)
-                        [0 .. nc - 1]
+                        (enumFromTo 0 (nc - 1))
                 -- δ^{j·chunkSize+k} is threaded as cd; no expModInteger per column.
                 (rightProd, nextDelta) =
                     foldl
@@ -497,7 +498,7 @@ computeHEval vk prf pubInputs x xnMinusOne y theta beta gamma trashChal =
                              in (acc * (ce + shift + gamma), cd * delta)
                         )
                         (ppEval j 0, curDelta)
-                        [0 .. nc - 1]
+                        (enumFromTo 0 (nc - 1))
              in (activeRows * (leftProd - rightProd), nextDelta)
 
         permExprs =
@@ -506,13 +507,13 @@ computeHEval vk prf pubInputs x xnMinusOne y theta beta gamma trashChal =
                 -- l_last · (z_l(x)² − z_l(x)) = 0
                 <> [lLast * (let zl = ppEval (numChunks - 1) 0 in zl * zl - zl)]
                 -- For j > 0: l_0 · (z_j(x) − z_{j-1}(ω^last · x)) = 0
-                <> map (\j -> l0 * (ppEval (j + 1) 0 - ppEval j 2)) [0 .. numChunks - 2]
+                <> map (\j -> l0 * (ppEval (j + 1) 0 - ppEval j 2)) (enumFromTo 0 (numChunks - 2))
                 -- Thread δ across chunks: start at δ^0 = one, no expModInteger needed.
-                <> fst (foldl (\(exprs, cd) j -> let (c, cd') = permChunkConstraint j cd in (exprs <> [c], cd')) ([], one) [0 .. numChunks - 1])
+                <> fst (foldl (\(exprs, cd) j -> let (c, cd') = permChunkConstraint j cd in (exprs <> [c], cd')) ([], one) (enumFromTo 0 (numChunks - 1)))
 
         -- ── Lookup expressions (5 per lookup) ────────────────────────────────
 
-        lookupExprs = concatMap (lookupExprsForK vk prf l0 lLast activeRows theta beta gamma evalE) [0 .. numLookups - 1]
+        lookupExprs = concatMap (lookupExprsForK vk prf l0 lLast activeRows theta beta gamma evalE) (enumFromTo 0 (numLookups - 1))
 
         -- ── Trash expressions ─────────────────────────────────────────────────
 
@@ -526,7 +527,7 @@ computeHEval vk prf pubInputs x xnMinusOne y theta beta gamma trashChal =
                         compressed = foldl (\acc e -> acc * trashChal + evalE e) zero consExprs
                      in compressed - (one - selE) * trashE
                 )
-                [0 .. numTrash - 1]
+                (enumFromTo 0 (numTrash - 1))
 
         -- ── Horner-fold all expressions with y ────────────────────────────────
         -- Rust convention: fold with (acc*y + e), first expr → highest power.
@@ -772,22 +773,21 @@ assembleRotationSets vk prf specs x x1 xNext xPrev xLast hEval hSplit =
         getComPairs x1j ss =
             let i = ssIndex ss
              in case ssKind ss of
-                    0 -> ([x1j], [advicePts !! i])
-                    1 -> ([], []) -- instance col is the zero polynomial; contributes nothing
-                    2 -> ([x1j], [lookupTablePts !! i])
-                    3 -> ([x1j], [trashPts !! i])
-                    4 -> ([x1j], [fixedPts !! i])
-                    5 -> ([x1j], [permSigmaPts !! i])
-                    6 ->
-                        -- H: nh entries, scalar = x₁^j · hSplit^m for m = 0..nh-1
+                    SKInstance -> ([], []) -- zero polynomial; contributes nothing
+                    SKH ->
+                        -- nh entries, scalar = x₁^j · hSplit^m for m = 0..nh-1
                         let nh = ccNumHPieces (vkConfig vk)
                             hSplitPows = powers hSplit nh
-                         in (map (\m -> x1j * hSplitPows !! m) [0 .. nh - 1], hPts)
-                    7 -> ([x1j], [randomPt])
-                    8 -> ([x1j], [permProdPts !! i])
-                    9 -> ([x1j], [lookupProdPts !! i])
-                    10 -> ([x1j], [lookupInputPts !! i])
-                    _ -> error ()
+                         in (map (\m -> x1j * hSplitPows !! m) (enumFromTo 0 (nh - 1)), hPts)
+                    SKAdvice -> ([x1j], [advicePts !! i])
+                    SKLookupTable -> ([x1j], [lookupTablePts !! i])
+                    SKTrash -> ([x1j], [trashPts !! i])
+                    SKFixed -> ([x1j], [fixedPts !! i])
+                    SKPermSigma -> ([x1j], [permSigmaPts !! i])
+                    SKRandom -> ([x1j], [randomPt])
+                    SKPermProd -> ([x1j], [permProdPts !! i])
+                    SKLookupProd -> ([x1j], [lookupProdPts !! i])
+                    SKLookupInput -> ([x1j], [lookupInputPts !! i])
 
         -- ── Evaluation of one slot at a given rotation position and offset ─
         --
@@ -800,18 +800,17 @@ assembleRotationSets vk prf specs x x1 xNext xPrev xLast hEval hSplit =
                 luE field = lookupEvalsRS !! (5 * i + field)
                 ppE fld = permProdEvalsRS !! (3 * i + fld)
              in case ssKind ss of
-                    0 -> advEvalsRS !! (ssEvalIdxs ss !! rotPos)
-                    1 -> zero -- instance_poly_eval always 0 in midnight-zk
-                    2 -> luE 4 -- lookup table @ x (field 4)
-                    3 -> trashEvalsRS !! i
-                    4 -> fixEvalsRS !! (ssEvalIdxs ss !! rotPos)
-                    5 -> permSigEvalsRS !! i
-                    6 -> hEval
-                    7 -> randomEvalRS
-                    8 -> case rot of RotCur -> ppE 0; RotNext -> ppE 1; _ -> ppE 2
-                    9 -> case rot of RotCur -> luE 0; _ -> luE 1
-                    10 -> case rot of RotCur -> luE 2; _ -> luE 3
-                    _ -> error ()
+                    SKAdvice -> advEvalsRS !! (ssEvalIdxs ss !! rotPos)
+                    SKInstance -> zero -- instance_poly_eval always 0 in midnight-zk
+                    SKLookupTable -> luE 4 -- lookup table @ x (field 4)
+                    SKTrash -> trashEvalsRS !! i
+                    SKFixed -> fixEvalsRS !! (ssEvalIdxs ss !! rotPos)
+                    SKPermSigma -> permSigEvalsRS !! i
+                    SKH -> hEval
+                    SKRandom -> randomEvalRS
+                    SKPermProd -> case rot of RotCur -> ppE 0; RotNext -> ppE 1; _ -> ppE 2
+                    SKLookupProd -> case rot of RotCur -> luE 0; _ -> luE 1
+                    SKLookupInput -> case rot of RotCur -> luE 2; _ -> luE 3
 
         -- ── Build one RotationSet from its spec ───────────────────────────
         buildSet :: RotationSetSpec -> RotationSet
@@ -832,7 +831,7 @@ assembleRotationSets vk prf specs x x1 xNext xPrev xLast hEval hSplit =
                 qEvalsAtPts =
                     zipWith
                         (\rotPos rot -> sum (zipWith (*) x1Powers (map (\ss -> getEval ss rotPos rot) slots)))
-                        [0 .. nRots - 1]
+                        (enumFromTo 0 (nRots - 1))
                         rots
              in RotationSet
                     { rsPoints = map evalPt rots
@@ -852,8 +851,10 @@ assembleRotationSets vk prf specs x x1 xNext xPrev xLast hEval hSplit =
 powers :: Scalar -> Integer -> [Scalar]
 powers x = go one
   where
-    go _ 0 = []
-    go acc k = acc : go (acc * x) (k - 1)
+    go acc k =
+        if k <= 0
+            then []
+            else acc : go (acc * x) (k - 1)
 
 {- | Fold a list with Horner's method in x.
 
