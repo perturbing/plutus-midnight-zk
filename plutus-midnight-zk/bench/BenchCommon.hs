@@ -1,9 +1,11 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NumericUnderscores #-}
 
-module BenchCommon (TestSize (..), printHeader, printSizeStatistics) where
+module BenchCommon (TestSize (..), printHeader, printSizeStatistics, evalUplcInteger) where
 
 import qualified Data.ByteString as BS
 import Data.SatInt (fromSatInt)
+import PlutusCore (DefaultUni (..), Some (..), ValueOf (..))
 import PlutusCore.Evaluation.Machine.ExBudget (ExBudget (..), exBudgetCPU, exBudgetMemory)
 import qualified PlutusCore.Evaluation.Machine.ExBudgetingDefaults as PLC
 import PlutusCore.Evaluation.Machine.ExMemory (ExCPU (..), ExMemory (..))
@@ -52,6 +54,21 @@ printHeader :: Handle -> IO ()
 printHeader h = do
     hPrintf h "    n     Script size             CPU usage               Memory usage\n"
     hPrintf h "  ----------------------------------------------------------------------\n"
+
+-- | Evaluate a fully-applied UPLC program that returns an Integer constant.
+evalUplcInteger ::
+    UPLC.Program UPLC.NamedDeBruijn UPLC.DefaultUni UPLC.DefaultFun () ->
+    Integer
+evalUplcInteger (UPLC.Program _ _ term) =
+    let report = Cek.runCekDeBruijn PLC.defaultCekParametersForTesting Cek.counting Cek.noEmitter term
+     in case Cek._cekReportResult report of
+            Cek.CekSuccessConstant (Some (ValueOf DefaultUniInteger n)) -> n
+            Cek.CekSuccessConstant _ ->
+                error "evalUplcInteger: constant result is not an Integer"
+            Cek.CekSuccessNonConstant _ ->
+                error "evalUplcInteger: result is not a constant (may be unapplied lambda)"
+            Cek.CekFailure err ->
+                error $ "evalUplcInteger: evaluation failed: " ++ show err
 
 printSizeStatistics ::
     Handle ->

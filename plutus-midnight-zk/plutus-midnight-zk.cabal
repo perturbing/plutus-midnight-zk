@@ -44,7 +44,21 @@ benchmark bench
   hs-source-dirs: bench
   other-modules:
     BenchCommon
+    EquivCheck
+    EquivScripts.ShaPreimage
     Scripts
+    SpecializedVerifier
+    SpecificScripts
+    SpecificScripts.BitcoinSig
+    SpecificScripts.Ecc
+    SpecificScripts.EcdsaThreshold
+    SpecificScripts.EthereumSig
+    SpecificScripts.Membership
+    SpecificScripts.NativeGadgets
+    SpecificScripts.Poseidon
+    SpecificScripts.RsaSig
+    SpecificScripts.SchnorrSig
+    SpecificScripts.ShaPreimage
 
   -- plutus-tx-plugin only supports GHC 9.6.x and 9.12.x; haskell.nix evaluates
   -- all GHC variant plans, so this guard prevents the bench from being resolved
@@ -73,3 +87,4 @@ benchmark bench
     plutus-midnight-zk,
     plutus-tx ^>=1.62,
     plutus-tx-plugin ^>=1.62,
+    template-haskell,

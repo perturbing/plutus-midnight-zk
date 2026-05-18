@@ -101,6 +101,12 @@ module Plutus.Crypto.MidnightZk.Verifier (
     horner,
     computeHEval,
     batchInverse,
+    evalGate,
+
+    -- * Sub-computation helpers (for equivalence testing)
+    deriveTranscript,
+    computeHGate,
+    computeXnMinusOne,
 ) where
 
 import GHC.ByteOrder (ByteOrder (..))
@@ -914,6 +920,96 @@ gwcNumDen [p0, p1] [v0, v1] qE x3 =
      in (qE * dp - v0 * d1 + v1 * d0, dp * d0 * d1)
 gwcNumDen pts vs qE x3 =
     (qE - lagrange pts vs x3, foldl (\acc p -> acc * (x3 - p)) one pts)
+
+-- | Replay the Fiat-Shamir transcript, returning all 10 challenges without verifying the proof.
+{-# INLINEABLE deriveTranscript #-}
+deriveTranscript ::
+    VerifyingKey ->
+    Proof ->
+    [Integer] ->
+    (Scalar, Scalar, Scalar, Scalar, Scalar, Scalar, Scalar, Scalar, Scalar, Scalar)
+deriveTranscript vk prf pubInputs =
+    let
+        td0 = initTranscript (vkTranscriptRepr vk)
+        td1 = td0 <> bls12_381_G1_compressed_zero
+        td2 = absorb td1 (integerToByteString LittleEndian 32 (length pubInputs))
+        td3 = foldl (\td n -> absorb td (integerToByteString LittleEndian 32 n)) td2 pubInputs
+        td4 = foldl (<>) td3 (prfAdviceComs prf)
+        (theta, td4s) = squeeze td4
+        td5 = foldl (<>) td4s (zipWith (<>) (prfLookupInputComs prf) (prfLookupTableComs prf))
+        (beta, td5s) = squeeze td5
+        (gamma, td5ss) = squeeze td5s
+        td6 = foldl (<>) td5ss (prfPermProdComs prf)
+        td7 = foldl (<>) td6 (prfLookupProdComs prf)
+        (trashChal, td7s) = squeeze td7
+        td7t = foldl (<>) td7s (prfTrashComs prf)
+        td8r = td7t <> prfRandomCom prf
+        (y, td8s) = squeeze td8r
+        td9 = foldl (<>) td8s (prfHComs prf)
+        (x, td9s) = squeeze td9
+        chkS = unScalar . mkScalar
+        allEvals =
+            [0]
+                <> map chkS (prfAdviceEvals prf)
+                <> map chkS (prfFixedEvals prf)
+                <> [chkS (prfRandomEval prf)]
+                <> map chkS (prfPermSigmaEvals prf)
+                <> map chkS (prfPermProdEvals prf)
+                <> map chkS (prfLookupEvals prf)
+                <> map chkS (prfTrashEvals prf)
+        td10 = foldl (\td n -> absorb td (integerToByteString LittleEndian 32 n)) td9s allEvals
+        (x1, td10s) = squeeze td10
+        (x2, td10ss) = squeeze td10s
+        td11 = td10ss <> prfFCom prf
+        (x3, td11s) = squeeze td11
+        td12 = foldl (\td n -> absorb td (integerToByteString LittleEndian 32 n)) td11s (prfQEvalsOnX3 prf)
+        (x4, _) = squeeze td12
+     in
+        (x, y, theta, beta, gamma, trashChal, x1, x2, x3, x4)
+
+-- | Compute @x^n - 1@ where @n = ccDomainSize (vkConfig vk)@.
+{-# INLINEABLE computeXnMinusOne #-}
+computeXnMinusOne :: VerifyingKey -> Scalar -> Scalar
+computeXnMinusOne vk x =
+    let n = ccDomainSize (vkConfig vk)
+        hSplit = scale (n - 1) x
+     in hSplit * x - one
+
+-- | Compute the gate Horner evaluation (first section of 'computeHEval').
+{-# INLINEABLE computeHGate #-}
+computeHGate ::
+    VerifyingKey ->
+    Proof ->
+    [Integer] ->
+    Scalar ->
+    Scalar ->
+    Scalar
+computeHGate vk prf pubInputs x y =
+    let
+        cfg = vkConfig vk
+        omega = ccOmega cfg
+        nInv = ccNInv cfg
+        n = ccDomainSize cfg
+        blinding = ccBlinding cfg
+        hSplit = scale (n - 1) x
+        xnMinusOne = hSplit * x - one
+        np = length pubInputs
+        pubOmgs = powers omega np
+        lLastOmg = ccOmegaLast cfg
+        omgBlindStart = lLastOmg * omega
+        lBlindOmgs = map (omgBlindStart *) (powers omega blinding)
+        allDenoms = map (x -) (pubOmgs <> [lLastOmg] <> lBlindOmgs) <> [xnMinusOne]
+        allInvs = batchInverse allDenoms
+        prefix = xnMinusOne * nInv
+        lagrangeFromInv omgI inv = omgI * prefix * inv
+        pubLags = zipWith lagrangeFromInv pubOmgs allInvs
+        instEvalPub = sum (zipWith (\inp lv -> mkScalar inp * lv) pubInputs pubLags)
+        instEvals = [zero, instEvalPub]
+        advEvals = map mkScalar (prfAdviceEvals prf)
+        fixEvals = map mkScalar (prfFixedEvals prf)
+        evalE e = evalGate e advEvals fixEvals instEvals
+     in
+        foldl (\acc e -> acc * y + evalE e) zero (vkGatePolys vk)
 
 {- | Montgomery batch modular inversion.
 
