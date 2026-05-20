@@ -2390,109 +2390,106 @@
       }
     ]
   ],
+  "gate_sel_cols": [
+    16,
+    17,
+    18,
+    18,
+    18,
+    21,
+    22,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    28,
+    29,
+    29,
+    30,
+    30,
+    30,
+    30,
+    31
+  ],
   "lookup_input_exprs": [
     [
       [
-        {
-          "op": "Fixed",
-          "query_index": 10
-        }
-      ],
-      [
-        {
-          "op": "Fixed",
-          "query_index": 19
-        },
-        {
-          "op": "Advice",
-          "query_index": 1
-        },
-        {
-          "op": "Product"
-        }
+        [
+          [
+            {
+              "op": "Fixed",
+              "query_index": 10
+            }
+          ],
+          [
+            {
+              "op": "Advice",
+              "query_index": 1
+            }
+          ]
+        ]
       ]
     ],
     [
       [
-        {
-          "op": "Fixed",
-          "query_index": 20
-        },
-        {
-          "op": "Fixed",
-          "query_index": 6
-        },
-        {
-          "op": "Product"
-        }
-      ],
-      [
-        {
-          "op": "Fixed",
-          "query_index": 20
-        },
-        {
-          "op": "Advice",
-          "query_index": 9
-        },
-        {
-          "op": "Product"
-        }
-      ],
-      [
-        {
-          "op": "Fixed",
-          "query_index": 20
-        },
-        {
-          "op": "Advice",
-          "query_index": 0
-        },
-        {
-          "op": "Product"
-        }
+        [
+          [
+            {
+              "op": "Fixed",
+              "query_index": 6
+            }
+          ],
+          [
+            {
+              "op": "Advice",
+              "query_index": 9
+            }
+          ],
+          [
+            {
+              "op": "Advice",
+              "query_index": 0
+            }
+          ]
+        ],
+        [
+          [
+            {
+              "op": "Fixed",
+              "query_index": 7
+            }
+          ],
+          [
+            {
+              "op": "Advice",
+              "query_index": 10
+            }
+          ],
+          [
+            {
+              "op": "Advice",
+              "query_index": 1
+            }
+          ]
+        ]
       ]
+    ]
+  ],
+  "lookup_selector_exprs": [
+    [
+      {
+        "op": "Fixed",
+        "query_index": 19
+      }
     ],
     [
-      [
-        {
-          "op": "Fixed",
-          "query_index": 20
-        },
-        {
-          "op": "Fixed",
-          "query_index": 7
-        },
-        {
-          "op": "Product"
-        }
-      ],
-      [
-        {
-          "op": "Fixed",
-          "query_index": 20
-        },
-        {
-          "op": "Advice",
-          "query_index": 10
-        },
-        {
-          "op": "Product"
-        }
-      ],
-      [
-        {
-          "op": "Fixed",
-          "query_index": 20
-        },
-        {
-          "op": "Advice",
-          "query_index": 1
-        },
-        {
-          "op": "Product"
-        }
-      ]
+      {
+        "op": "Fixed",
+        "query_index": 20
+      }
     ]
   ],
   "lookup_table_exprs": [
@@ -2507,26 +2504,6 @@
         {
           "op": "Fixed",
           "query_index": 12
-        }
-      ]
-    ],
-    [
-      [
-        {
-          "op": "Fixed",
-          "query_index": 13
-        }
-      ],
-      [
-        {
-          "op": "Fixed",
-          "query_index": 14
-        }
-      ],
-      [
-        {
-          "op": "Fixed",
-          "query_index": 15
         }
       ]
     ],

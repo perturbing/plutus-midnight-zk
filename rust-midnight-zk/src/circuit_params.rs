@@ -13,26 +13,7 @@ use crate::rotation_sets::rotation_sets_bytes;
 // ── Gate-expression serialisation ─────────────────────────────────────────────
 
 /// Emit an `Expression<Fq>` as a flat RPN sequence of human-readable instruction
-/// objects into `out`.  Each instruction is a JSON object with an `"op"` field
-/// and any operands.  Example output for `a * b + c`:
-/// ```json
-/// [{"op":"Advice","query_index":0},
-///  {"op":"Advice","query_index":1},
-///  {"op":"Product"},
-///  {"op":"Advice","query_index":2},
-///  {"op":"Sum"}]
-/// ```
-///
-/// Op reference:
-///   Constant  {"op":"Constant","value":"<32-byte LE hex>"}
-///   Advice    {"op":"Advice",   "query_index":<uint>}
-///   Fixed     {"op":"Fixed",    "query_index":<uint>}
-///   Instance  {"op":"Instance", "query_index":<uint>}
-///   Challenge {"op":"Challenge","index":<uint>}
-///   Negated   {"op":"Negated"}
-///   Sum       {"op":"Sum"}
-///   Product   {"op":"Product"}
-///   Scaled    {"op":"Scaled",   "factor":"<32-byte LE hex>"}
+/// objects into `out`.
 fn emit_json_instrs(expr: &Expression<Fq>, out: &mut Vec<serde_json::Value>) {
     match expr {
         Expression::Constant(f) => {
@@ -62,12 +43,6 @@ fn emit_json_instrs(expr: &Expression<Fq>, out: &mut Vec<serde_json::Value>) {
                 "query_index": q.index.expect("unresolved Instance query index in VK"),
             }));
         }
-        Expression::Challenge(c) => {
-            out.push(serde_json::json!({
-                "op": "Challenge",
-                "index": c.index(),
-            }));
-        }
         Expression::Negated(a) => {
             emit_json_instrs(a, out);
             out.push(serde_json::json!({"op": "Negated"}));
@@ -92,7 +67,6 @@ fn emit_json_instrs(expr: &Expression<Fq>, out: &mut Vec<serde_json::Value>) {
     }
 }
 
-/// Serialise one `Expression<Fq>` as a flat RPN JSON array of instruction objects.
 fn expr_to_json_instrs(expr: &Expression<Fq>) -> serde_json::Value {
     let mut instructions = Vec::new();
     emit_json_instrs(expr, &mut instructions);
@@ -100,14 +74,10 @@ fn expr_to_json_instrs(expr: &Expression<Fq>) -> serde_json::Value {
 }
 
 /// Compute the `(col_type, eval_idx)` for one permutation column.
-///
-/// `col_type`: 0 = Advice, 1 = Fixed, 2 = Instance.
-/// `eval_idx`: position in `cs.advice_queries()` / `cs.fixed_queries()` /
-///             `cs.instance_queries()` at Rotation(0) for this column.
 fn perm_col_entry(col: midnight_proofs::plonk::Column<Any>, cs: &ConstraintSystem<Fq>) -> (u8, u32) {
     let col_idx = col.index();
     match col.column_type() {
-        Any::Advice(_) => {
+        Any::Advice => {
             let ei = cs.advice_queries()
                 .iter()
                 .position(|(c, r)| c.index() == col_idx && r.0 == 0)
@@ -165,51 +135,63 @@ impl<'a> ProofReader<'a> {
     fn remaining(&self) -> usize { self.data.len() - self.pos }
 }
 
-/// Parse a GWC proof into its constituent parts as a structured JSON object.
+/// 32-byte LE hex for the field element 1.
+const ONE_HEX: &str = "0100000000000000000000000000000000000000000000000000000000000000";
+
+/// Parse a GWC proof (v7 LogUp format) into its constituent parts as a structured JSON object.
 ///
-/// The returned object has keys:
-/// `advice_commitments`, `lookup_permuted_commitments`,
-/// `permutation_product_commitments`, `lookup_product_commitments`,
-/// `trash_commitments`, `random_poly_commitment`, `h_commitments`,
-/// `advice_evals`, `fixed_evals`, `random_eval`, `sigma_evals`,
-/// `permutation_product_evals`, `lookup_evals`, `trash_evals`, `gwc`.
+/// Commitment layout (48 bytes each):
+///   advice[na] | mult[nl] | perm_z[np] | per_lookup(helpers[nc_k] + accum) | trash[num_trash] | h[nh]
+///
+/// Evaluation layout (32 bytes each):
+///   advice[naq] | fixed[nfq] | sigma[npc] | perm_z_evals[num_ppe] |
+///   per_lookup(mult_eval + helpers[nc_k] + accum_eval + accum_next_eval) | trash[num_trash]
+///
+/// GWC (trailing):
+///   f_commit[48] | q_evals[num_q × 32] | w_commit[48]
 pub fn proof_to_json(proof: &[u8], p: &CircuitParams) -> serde_json::Value {
     let mut r = ProofReader::new(proof);
     let np = (p.npc + p.chunk_size - 1) / p.chunk_size;
     let perm_all_3evals = p.num_ppe == np * 3;
 
     // ── Commitments ───────────────────────────────────────────────────────
-    let advice_commitments: Vec<_> =
-        (0..p.na).map(|_| r.g1()).collect();
+    let advice_commitments: Vec<_> = (0..p.na).map(|_| r.g1()).collect();
 
-    let lookup_permuted_commitments: Vec<_> = (0..p.nl)
-        .map(|_| serde_json::json!({
-            "permuted_input": r.g1(),
-            "permuted_table": r.g1(),
-        }))
+    // LogUp: multiplicities (one per lookup, written before perm z)
+    let lookup_multiplicity_commitments: Vec<_> = (0..p.nl).map(|_| r.g1()).collect();
+
+    // Permutation z-poly commitments
+    let permutation_product_commitments: Vec<_> = (0..np).map(|_| r.g1()).collect();
+
+    // LogUp: per lookup — helpers + accumulator (written after perm z)
+    let lookup_logup_commitments: Vec<_> = p.lookup_num_chunks.iter()
+        .map(|&nc| {
+            let helpers: Vec<String> = (0..nc).map(|_| r.g1()).collect();
+            let accumulator = r.g1();
+            serde_json::json!({ "helpers": helpers, "accumulator": accumulator })
+        })
         .collect();
 
-    let permutation_product_commitments: Vec<_> =
-        (0..np).map(|_| r.g1()).collect();
-    let lookup_product_commitments: Vec<_> =
-        (0..p.nl).map(|_| r.g1()).collect();
-    let trash_commitments: Vec<_> =
-        (0..p.num_trash).map(|_| r.g1()).collect();
-    let random_poly_commitment = r.g1();
-    let h_commitments: Vec<_> =
-        (0..p.nh).map(|_| r.g1()).collect();
+    let trash_commitments: Vec<_> = (0..p.num_trash).map(|_| r.g1()).collect();
+    let h_commitments: Vec<_> = (0..p.nh).map(|_| r.g1()).collect();
 
     // ── Evaluations ───────────────────────────────────────────────────────
-    // instance_poly_eval: midnight-zk does not use committed instances (col 0 is the
-    // zero polynomial); the value is always 0x00…00.  We consume the 32 bytes from the
-    // proof stream to keep subsequent offsets correct, but do not write it to JSON —
-    // the Haskell verifier hardcodes 0 and the transcript absorbs that constant directly.
-    r.scalar(); // consume & discard instance_poly_eval (always 0)
-    let advice_evals: Vec<_>  = (0..p.naq).map(|_| r.scalar()).collect();
-    let fixed_evals: Vec<_>   = (0..p.nfq).map(|_| r.scalar()).collect();
-    let random_eval            = r.scalar();
-    let sigma_evals: Vec<_>   = (0..p.npc).map(|_| r.scalar()).collect();
+    // Committed instance eval (always 0: committed_pi = G1Affine::identity()).
+    // midnight-proofs writes this before advice evals; we skip it here since
+    // the Haskell verifier hard-codes 0 at this transcript position.
+    let _ = r.scalar();
 
+    // Advice evals
+    let advice_evals: Vec<_> = (0..p.naq).map(|_| r.scalar()).collect();
+
+    // Fixed evals: read nfq (actual in proof), reconstruct full array with 1s at simple-selector positions.
+    let proof_fixed: Vec<String> = (0..p.nfq).map(|_| r.scalar()).collect();
+    let fixed_evals = reconstruct_fixed_evals(&proof_fixed, &p.simple_sel_mask);
+
+    // Permutation sigma evals (common)
+    let sigma_evals: Vec<_> = (0..p.npc).map(|_| r.scalar()).collect();
+
+    // Permutation z-poly evals
     let permutation_product_evals: Vec<_> = (0..np)
         .map(|i| {
             let eval      = r.scalar();
@@ -227,17 +209,26 @@ pub fn proof_to_json(proof: &[u8], p: &CircuitParams) -> serde_json::Value {
         })
         .collect();
 
-    let lookup_evals: Vec<_> = (0..p.nl)
-        .map(|_| serde_json::json!({
-            "product_eval":            r.scalar(),
-            "product_next_eval":       r.scalar(),
-            "permuted_input_eval":     r.scalar(),
-            "permuted_input_inv_eval": r.scalar(),
-            "permuted_table_eval":     r.scalar(),
-        }))
+    // LogUp evals: per lookup — mult_eval, helper_evals[nc], accum_eval, accum_next_eval
+    let lookup_evals: Vec<_> = p.lookup_num_chunks.iter()
+        .map(|&nc| {
+            let mult_eval = r.scalar();
+            let helper_evals: Vec<String> = (0..nc).map(|_| r.scalar()).collect();
+            let accum_eval = r.scalar();
+            let accum_next_eval = r.scalar();
+            serde_json::json!({
+                "mult_eval":       mult_eval,
+                "helper_evals":    helper_evals,
+                "accum_eval":      accum_eval,
+                "accum_next_eval": accum_next_eval,
+            })
+        })
         .collect();
 
     let trash_evals: Vec<_> = (0..p.num_trash).map(|_| r.scalar()).collect();
+
+    // fewer-point-sets: dummy evals (absorbed into transcript between regular evals and GWC)
+    let dummy_evals: Vec<_> = (0..p.num_dummy).map(|_| r.scalar()).collect();
 
     // ── GWC multiopen proof ───────────────────────────────────────────────
     let f_commitment = r.g1();
@@ -250,20 +241,19 @@ pub fn proof_to_json(proof: &[u8], p: &CircuitParams) -> serde_json::Value {
     );
 
     serde_json::json!({
-        "advice_commitments":            advice_commitments,
-        "lookup_permuted_commitments":   lookup_permuted_commitments,
+        "advice_commitments":              advice_commitments,
+        "lookup_multiplicity_commitments": lookup_multiplicity_commitments,
         "permutation_product_commitments": permutation_product_commitments,
-        "lookup_product_commitments":    lookup_product_commitments,
-        "trash_commitments":             trash_commitments,
-        "random_poly_commitment":        random_poly_commitment,
-        "h_commitments":                 h_commitments,
-        "advice_evals":                  advice_evals,
-        "fixed_evals":                   fixed_evals,
-        "random_eval":                   random_eval,
-        "sigma_evals":                   sigma_evals,
-        "permutation_product_evals":     permutation_product_evals,
-        "lookup_evals":                  lookup_evals,
-        "trash_evals":                   trash_evals,
+        "lookup_logup_commitments":        lookup_logup_commitments,
+        "trash_commitments":               trash_commitments,
+        "h_commitments":                   h_commitments,
+        "advice_evals":                    advice_evals,
+        "fixed_evals":                     fixed_evals,
+        "sigma_evals":                     sigma_evals,
+        "permutation_product_evals":       permutation_product_evals,
+        "lookup_evals":                    lookup_evals,
+        "trash_evals":                     trash_evals,
+        "dummy_evals":                     dummy_evals,
         "gwc": {
             "f_commitment": f_commitment,
             "q_evals":      q_evals,
@@ -272,29 +262,40 @@ pub fn proof_to_json(proof: &[u8], p: &CircuitParams) -> serde_json::Value {
     })
 }
 
+/// Reconstruct the full fixed-evals vector (length = mask.len()) by inserting
+/// the string `ONE_HEX` at positions where the mask is `true` (simple selector).
+fn reconstruct_fixed_evals(proof_evals: &[String], mask: &[bool]) -> Vec<serde_json::Value> {
+    let mut result = Vec::with_capacity(mask.len());
+    let mut it = proof_evals.iter();
+    for &is_simple in mask {
+        if is_simple {
+            result.push(serde_json::Value::String(ONE_HEX.to_string()));
+        } else {
+            result.push(serde_json::Value::String(it.next().expect("fixed eval missing").clone()));
+        }
+    }
+    result
+}
+
 // ── Rotation-set parser ───────────────────────────────────────────────────────
 
 fn poly_kind_name(k: u8) -> &'static str {
     match k {
         0  => "Advice",
         1  => "Instance",
-        2  => "LookupTable",
+        2  => "LogupMult",
         3  => "Trash",
         4  => "Fixed",
         5  => "PermSigma",
         6  => "H",
-        7  => "Random",
         8  => "PermProd",
-        9  => "LookupProd",
-        10 => "LookupInput",
+        9  => "LogupAccum",
+        10 => "LogupHelper",
         _  => "Unknown",
     }
 }
 
 /// Parse a rotation-sets binary buffer into a structured JSON object.
-///
-/// Format per the `rotation_sets.rs` spec:
-/// `num_sets`, then for each set: rotations, then slots (poly_kind, index, eval_idxs).
 pub fn rotation_sets_to_json(buf: &[u8]) -> serde_json::Value {
     let mut pos = 0usize;
 
@@ -353,27 +354,37 @@ pub fn rotation_sets_to_json(buf: &[u8]) -> serde_json::Value {
 }
 
 /// All circuit-structure scalars needed by the Plutus verifier.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct CircuitParams {
-    pub na: u32,         // number of advice columns
-    pub nl: u32,         // number of lookups
-    pub npc: u32,        // number of permutation commitments
-    pub chunk_size: u32, // degree − 2
-    pub nh: u32,         // degree − 1
-    pub naq: u32,        // number of advice queries
-    pub nfq: u32,        // number of fixed queries
-    pub num_trash: u32,  // extra G1 blinding commitments
-    pub num_ppe: u32,    // perm-product eval count
-    pub num_q: u32,      // rotation-set (Q) count
+    pub na: u32,                      // number of advice columns
+    pub nl: u32,                      // number of lookups (BatchedArguments)
+    pub npc: u32,                     // number of permutation columns
+    pub chunk_size: u32,              // degree − 2
+    pub nh: u32,                      // degree − 1 (quotient limbs)
+    pub naq: u32,                     // number of advice queries
+    pub nfq: u32,                     // fixed evals IN PROOF (= total − simple_selectors)
+    pub num_trash: u32,               // extra blinding commitments
+    pub num_ppe: u32,                 // perm product eval count
+    pub num_q: u32,                   // rotation-set (Q) count
+    pub lookup_num_chunks: Vec<u32>,  // per-lookup helper poly count
+    // Not serialised in params_to_bytes but used by proof_to_json:
+    pub nfq_total: u32,               // total fixed_queries (for index mapping)
+    pub simple_sel_mask: Vec<bool>,   // per fixed_query: is it a simple selector?
+    pub num_dummy: u32,               // fewer-point-sets dummy evals (between regular evals and GWC)
 }
 
-/// Serialize `params` as 10 × u32 LE (40 bytes).
-pub fn params_to_bytes(p: &CircuitParams) -> [u8; 40] {
+/// Serialize `params` as 11 × u32 LE (44 bytes).
+///
+/// Fields: na, nl, npc, chunk_size, nh, naq, nfq, num_trash, num_ppe, num_q,
+///         total_lookup_helpers (= sum of lookup_num_chunks).
+pub fn params_to_bytes(p: &CircuitParams) -> [u8; 44] {
+    let total_lh: u32 = p.lookup_num_chunks.iter().sum();
     let words = [
         p.na, p.nl, p.npc, p.chunk_size, p.nh,
         p.naq, p.nfq, p.num_trash, p.num_ppe, p.num_q,
+        total_lh,
     ];
-    let mut out = [0u8; 40];
+    let mut out = [0u8; 44];
     for (i, w) in words.iter().enumerate() {
         out[i * 4..i * 4 + 4].copy_from_slice(&w.to_le_bytes());
     }
@@ -386,26 +397,52 @@ fn compute_circuit_params(
     npc: u32,
     degree: usize,
     naq: u32,
-    nfq: u32,
+    nfq_total: u32,
+    nfq_actual: u32,
+    num_trash: u32,
     proof: &[u8],
     num_q: u32,
+    lookup_num_chunks: &[u32],
+    simple_sel_mask: Vec<bool>,
 ) -> CircuitParams {
     let chunk_size = (degree - 2) as u32;
     let np = (npc + chunk_size - 1) / chunk_size;
     let nh = (degree - 1) as u32;
+    let total_lh: u32 = lookup_num_chunks.iter().sum();
 
-    let sc_init = 1 + naq + nfq + 1 + npc + (np - 1) * 3 + 2 + 5 * nl;
-    let trailing = 96 + num_q * 32;
-    let commit_bytes = proof.len() as u32 - trailing - sc_init * 32;
-    let actual_g1 = commit_bytes / 48;
-    let expected_g1_base = na + 2 * nl + np + nl + 1 + nh;
-    let num_trash = actual_g1 - expected_g1_base;
+    // G1 count (including GWC F and W):
+    //   advice + mult + perm_z + helpers + accum + trash + h + F + W
+    //   = na + nl + np + total_lh + nl + num_trash + nh + 2
+    //   = na + 2*nl + np + total_lh + num_trash + nh + 2
+    let g1_count = na + 2 * nl + np + total_lh + num_trash + nh + 2;
 
-    let non_perm_sc = 1 + naq + nfq + 1 + npc + 5 * nl + num_trash;
-    let total_scalars_and_q = (proof.len() as u32 - actual_g1 * 48 - 96) / 32;
-    let num_ppe = total_scalars_and_q - non_perm_sc - num_q;
+    // num_ppe: 2 evals for the last perm chunk, 3 for every other (eval + next_eval + last_eval).
+    // The `fewer-point-sets` feature inserts num_dummy extra scalars AFTER the regular evals and
+    // BEFORE the GWC F commitment; compute num_dummy as the leftover after accounting for
+    // everything else.
+    let num_ppe = if np > 0 { 3 * np - 1 } else { 0 };
+    let total_sc = (proof.len() as u32 - g1_count * 48) / 32;
+    // base_sc: committed-instance eval (1) + advice + fixed + sigma + logup + trash
+    // (everything except perm_z evals, dummy, Q)
+    let base_sc = 1 + naq + nfq_actual + npc + total_lh + 3 * nl + num_trash;
+    let num_dummy = total_sc - base_sc - num_ppe - num_q;
 
-    CircuitParams { na, nl, npc, chunk_size, nh, naq, nfq, num_trash, num_ppe, num_q }
+    CircuitParams {
+        na,
+        nl,
+        npc,
+        chunk_size,
+        nh,
+        naq,
+        nfq: nfq_actual,
+        num_trash,
+        num_ppe,
+        num_q,
+        lookup_num_chunks: lookup_num_chunks.to_vec(),
+        nfq_total,
+        simple_sel_mask,
+        num_dummy,
+    }
 }
 
 /// Encode a slice of field elements as concatenated 32-byte LE representations.
@@ -415,11 +452,7 @@ pub fn instance_field_bytes<F: PrimeField>(pi: &[F]) -> Vec<u8> {
 
 /// Write `{name}_circuit_params.json` and `{name}_rotation_sets.json` into `dir`.
 ///
-/// `circuit_params.json` contains the 10 circuit-structure scalars as named fields.
-/// `rotation_sets.json` contains the rotation-set binary as a hex string.
-///
-/// Returns the computed `CircuitParams` so callers can reuse it (e.g. for proof parsing)
-/// without recomputing rotation sets a second time.
+/// Returns the computed `CircuitParams` for reuse in proof parsing.
 pub fn write_json_circuit_artifacts(
     dir: &str,
     name: &str,
@@ -428,39 +461,57 @@ pub fn write_json_circuit_artifacts(
     npc: u32,
     degree: usize,
     naq: u32,
-    nfq: u32,
+    nfq_total: u32,
+    nfq_actual: u32,
+    num_trash: u32,
     proof: &[u8],
     aq: &[(usize, i32)],
     fq: &[(usize, i32)],
+    lookup_num_chunks: &[u32],
+    simple_sel_mask: Vec<bool>,
 ) -> CircuitParams {
-    let buf0 = rotation_sets_bytes(aq, fq, na as usize, nl as usize, npc as usize, degree, 0, false);
+    let lnc_usize: Vec<usize> = lookup_num_chunks.iter().map(|&c| c as usize).collect();
+
+    let buf0 = rotation_sets_bytes(
+        aq, fq, &simple_sel_mask,
+        na as usize, nl as usize, npc as usize,
+        degree, 0, false,
+        &lnc_usize,
+    );
     let num_q = u32::from_le_bytes(buf0[0..4].try_into().unwrap());
 
-    let p = compute_circuit_params(na, nl, npc, degree, naq, nfq, proof, num_q);
+    let p = compute_circuit_params(
+        na, nl, npc, degree, naq, nfq_total, nfq_actual, num_trash, proof, num_q,
+        lookup_num_chunks, simple_sel_mask.clone(),
+    );
 
     let chunk_size = (degree - 2) as u32;
     let np = (npc + chunk_size - 1) / chunk_size;
     let perm_all_3evals = p.num_ppe == np * 3;
 
     let rot_buf = rotation_sets_bytes(
-        aq, fq,
+        aq, fq, &simple_sel_mask,
         na as usize, nl as usize, npc as usize,
         degree,
         p.num_trash as usize,
         perm_all_3evals,
+        &lnc_usize,
     );
 
+    let total_lh: u32 = lookup_num_chunks.iter().sum();
     let params_json = serde_json::json!({
-        "num_advice_columns":           p.na,
-        "num_lookups":                  p.nl,
-        "num_permutation_commitments":  p.npc,
-        "permutation_chunk_size":       p.chunk_size,
-        "num_quotient_commitments":     p.nh,
-        "num_advice_queries":           p.naq,
-        "num_fixed_queries":            p.nfq,
-        "num_blinding_commitments":     p.num_trash,
-        "num_permutation_product_evals": p.num_ppe,
-        "num_rotation_sets":            p.num_q,
+        "num_advice_columns":              p.na,
+        "num_lookups":                     p.nl,
+        "num_permutation_commitments":     p.npc,
+        "permutation_chunk_size":          p.chunk_size,
+        "num_quotient_commitments":        p.nh,
+        "num_advice_queries":              p.naq,
+        "num_fixed_queries":               p.nfq,
+        "num_blinding_commitments":        p.num_trash,
+        "num_permutation_product_evals":   p.num_ppe,
+        "num_rotation_sets":               p.num_q,
+        "total_lookup_helpers":            total_lh,
+        "lookup_num_chunks_per_lookup":    p.lookup_num_chunks,
     });
     let params_out = serde_json::to_string_pretty(&params_json).unwrap();
     fs::write(format!("{dir}/{name}_circuit_params.json"), &params_out)
@@ -474,21 +525,6 @@ pub fn write_json_circuit_artifacts(
 }
 
 /// Write all six Plutus artifact files for a circuit into `dir` as JSON.
-///
-/// Files written:
-///   `{name}_plutus_vk.json`            – trusted-setup-dependent fields (commitments, SRS, Ω)
-///   `{name}_circuit_constraint.json`   – circuit-structure fields (gate polys, perm types, δ)
-///   `{name}_circuit_params.json`       – 10 scalar circuit dimensions
-///   `{name}_rotation_sets.json`        – rotation-set metadata
-///   `{name}_plutus_proof.json`         – proof bytes (structured)
-///   `{name}_plutus_instance.json`      – public inputs as 32-byte LE hex strings
-///
-/// The VK and circuit_constraint files are deliberately separated:
-///   * VK fields change when you redo the trusted setup (new SRS).
-///   * circuit_constraint fields change only when you redesign the circuit.
-///   This mirrors the rotation_sets separation and makes auditing easier.
-///
-/// Does not use `write_plutus_vk`; all VK fields are accessed via the public API.
 pub fn write_json_all_artifacts(
     dir: &str,
     name: &str,
@@ -503,7 +539,6 @@ pub fn write_json_all_artifacts(
     {
         let k = vk.n().trailing_zeros();
 
-        // Primitive 2^k-th root of unity: square ROOT_OF_UNITY down from 2^S.
         let mut omega = Fq::ROOT_OF_UNITY;
         for _ in 0..(Fq::S - k) {
             omega = omega.square();
@@ -515,11 +550,11 @@ pub fn write_json_all_artifacts(
         let perm_commitments: Vec<String> = vk.permutation().commitments().iter()
             .map(|c| to_hex(c.to_bytes().as_ref()))
             .collect();
-        // ── Trusted-setup-dependent fields → *_plutus_vk.json ────────────────
-        // These change when you redo the SRS (trusted setup).
-        // advice_queries and fixed_queries are omitted: they are committed to via
-        // transcript_repr and their evaluation indices are pre-computed into
-        // eval_idxs in rotation_sets.json, so the verifier never needs them directly.
+
+        let simple_sel_mask_json: Vec<bool> = vk.cs().fixed_queries().iter()
+            .map(|(col, _)| vk.cs().has_simple_selector_col(col.index()))
+            .collect();
+
         let vk_json = serde_json::json!({
             "k":                    k,
             "fixed_commitments":    fixed_commitments,
@@ -532,20 +567,33 @@ pub fn write_json_all_artifacts(
             "num_lookups":          vk.cs().lookups().len() as u32,
             "s_g2":                 to_hex(s_g2_bytes),
             "omega":                to_hex(omega.to_repr().as_ref()),
+            "simple_selector_mask": simple_sel_mask_json,
         });
         let vk_out = serde_json::to_string_pretty(&vk_json).unwrap();
         fs::write(format!("{dir}/{name}_plutus_vk.json"), &vk_out)
             .expect("failed to write plutus_vk.json");
 
-        // ── Circuit-structure-dependent fields → *_circuit_constraint.json ──
-        // These change only when the circuit design changes, not with the SRS.
-        // Gate polynomials: flat RPN instruction arrays, one per gate poly (flattened across gates).
+        // Circuit-structure-dependent fields
         let gate_polys: Vec<serde_json::Value> = vk.cs().gates()
             .iter()
             .flat_map(|g| g.polynomials().iter().map(expr_to_json_instrs))
             .collect();
 
-        // Permutation column types: (col_type, eval_idx) per perm column.
+        // For each gate polynomial: the fixed column index of the first simple selector
+        // used by that gate, or null if the gate uses no simple selector.
+        // Used by the Haskell verifier to compute the linearization commitment correctly.
+        let gate_sel_cols: Vec<serde_json::Value> = vk.cs().gates()
+            .iter()
+            .flat_map(|g| {
+                let maybe_sel: Option<serde_json::Value> = g.queried_selectors()
+                    .iter()
+                    .find(|s| s.is_simple())
+                    .map(|s| serde_json::Value::Number(serde_json::Number::from(s.index() as u64)));
+                let val = maybe_sel.unwrap_or(serde_json::Value::Null);
+                g.polynomials().iter().map(move |_| val.clone()).collect::<Vec<_>>()
+            })
+            .collect();
+
         let perm_col_types: Vec<serde_json::Value> = vk.cs().permutation()
             .get_columns()
             .iter()
@@ -555,17 +603,44 @@ pub fn write_json_all_artifacts(
             })
             .collect();
 
-        // Lookup input / table expressions: flat RPN instruction arrays.
-        let lookup_input_exprs: Vec<Vec<serde_json::Value>> = vk.cs().lookups()
+        // LogUp lookup input exprs: [lookup][chunk][parallel_input][width_exprs]
+        // This is the 4-level nested structure needed for LogUp constraint evaluation.
+        let lookup_input_exprs: Vec<serde_json::Value> = vk.cs().lookups()
             .iter()
-            .map(|lk| lk.input_expressions().iter().map(expr_to_json_instrs).collect())
+            .map(|lk| {
+                let cs_degree = vk.cs().degree();
+                let chunked = lk.chunk_by_degree(cs_degree);
+                // input_expression_chunks: [chunk][parallel_input][width]
+                let chunks: Vec<serde_json::Value> = chunked.input_expression_chunks()
+                    .iter()
+                    .map(|chunk| {
+                        let parallel: Vec<serde_json::Value> = chunk.iter()
+                            .map(|width_exprs| {
+                                let exprs: Vec<serde_json::Value> = width_exprs.iter()
+                                    .map(expr_to_json_instrs)
+                                    .collect();
+                                serde_json::Value::Array(exprs)
+                            })
+                            .collect();
+                        serde_json::Value::Array(parallel)
+                    })
+                    .collect();
+                serde_json::Value::Array(chunks)
+            })
             .collect();
+
+        // LogUp table exprs: [lookup][width_exprs] (for θ-compression)
         let lookup_table_exprs: Vec<Vec<serde_json::Value>> = vk.cs().lookups()
             .iter()
             .map(|lk| lk.table_expressions().iter().map(expr_to_json_instrs).collect())
             .collect();
 
-        // Trash argument selectors and constraint expressions: flat RPN instruction arrays.
+        // LogUp selector exprs: [lookup] — single expression per lookup
+        let lookup_selector_exprs: Vec<serde_json::Value> = vk.cs().lookups()
+            .iter()
+            .map(|lk| expr_to_json_instrs(lk.selector_expression()))
+            .collect();
+
         let trash_selectors: Vec<serde_json::Value> = vk.cs().trashcans()
             .iter()
             .map(|t| expr_to_json_instrs(t.selector()))
@@ -575,16 +650,15 @@ pub fn write_json_all_artifacts(
             .map(|t| t.constraint_expressions().iter().map(expr_to_json_instrs).collect())
             .collect();
 
-        // Note: delta (= 7^{2^32} mod q, the coset generator) is a constant of the
-        // BLS12-381 scalar field definition and is hardcoded in the Haskell verifier
-        // as `bls12_381_scalar_delta` in BlsUtils.hs. It does not appear here.
         let cc_json = serde_json::json!({
-            "gate_polys":             gate_polys,
-            "perm_col_types":         perm_col_types,
-            "lookup_input_exprs":     lookup_input_exprs,
-            "lookup_table_exprs":     lookup_table_exprs,
-            "trash_selectors":        trash_selectors,
-            "trash_constraint_exprs": trash_constraint_exprs,
+            "gate_polys":              gate_polys,
+            "gate_sel_cols":           gate_sel_cols,
+            "perm_col_types":          perm_col_types,
+            "lookup_input_exprs":      lookup_input_exprs,
+            "lookup_table_exprs":      lookup_table_exprs,
+            "lookup_selector_exprs":   lookup_selector_exprs,
+            "trash_selectors":         trash_selectors,
+            "trash_constraint_exprs":  trash_constraint_exprs,
         });
         let cc_out = serde_json::to_string_pretty(&cc_json).unwrap();
         fs::write(format!("{dir}/{name}_circuit_constraint.json"), &cc_out)
@@ -598,14 +672,31 @@ pub fn write_json_all_artifacts(
         let nl  = cs.lookups().len() as u32;
         let npc = vk.permutation().commitments().len() as u32;
         let naq = cs.advice_queries().len() as u32;
-        let nfq = cs.fixed_queries().len() as u32;
+        let nfq_total = cs.fixed_queries().len() as u32;
+        let num_simple = cs.num_simple_selectors() as u32;
+        let nfq_actual = nfq_total - num_simple;
+        let num_trash = cs.trashcans().len() as u32;
+
+        let simple_sel_mask: Vec<bool> = cs.fixed_queries().iter()
+            .map(|(col, _)| cs.has_simple_selector_col(col.index()))
+            .collect();
+
+        let lookup_num_chunks: Vec<u32> = cs.lookups().iter()
+            .map(|lk| lk.num_chunks(cs.degree()) as u32)
+            .collect();
+
         let aq: Vec<(usize, i32)> = cs.advice_queries().iter()
             .map(|(col, r)| (col.index(), r.0)).collect();
         let fq_vec: Vec<(usize, i32)> = cs.fixed_queries().iter()
             .map(|(col, r)| (col.index(), r.0)).collect();
-
         let p = write_json_circuit_artifacts(
-            dir, name, na, nl, npc, cs.degree(), naq, nfq, proof, &aq, &fq_vec,
+            dir, name,
+            na, nl, npc, cs.degree(),
+            naq, nfq_total, nfq_actual, num_trash,
+            proof,
+            &aq, &fq_vec,
+            &lookup_num_chunks,
+            simple_sel_mask,
         );
 
         let proof_out = serde_json::to_string_pretty(&proof_to_json(proof, &p)).unwrap();

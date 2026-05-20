@@ -127,18 +127,22 @@ A transcript accumulates all commitments sent so far; squeezing the transcript
 The order matters and must match exactly between prover and verifier:
 
 ```
-absorb(transcript_repr)         → seeds the transcript with the circuit identity
-absorb(G1_zero)                 → instance column placeholder
-absorb(pubInputs)               → public inputs
-absorb(advice_commitments)      → squeeze θ   (lookup compression)
-absorb(lookup_coms)             → squeeze β, γ (permutation / lookup)
-absorb(perm+lookup_prod_coms)   → squeeze trashChal
-absorb(random_poly_com)         → squeeze y   (gate folding challenge)
-absorb(h_commitments)           → squeeze x   (shared evaluation point)
-absorb(all_evaluations)         → squeeze x₁, x₂
-absorb(fCom)                    → squeeze x₃  (GWC opening point)
-absorb(q_evals_on_x₃)          → squeeze x₄
+absorb(transcript_repr)                   → seeds the transcript with the circuit identity
+absorb(G1_zero)                           → instance column placeholder
+absorb(pubInputs)                         → public inputs
+absorb(advice_commitments)                → squeeze θ   (lookup θ-compression challenge)
+absorb(lookup_multiplicity_commitments)   → squeeze β, γ (permutation + LogUp challenges)
+absorb(perm_product_commitments)          → (no squeeze)
+absorb(per-lookup helpers + accumulator)  → squeeze trashChal (once, after all lookups)
+absorb(trash_commitments)                 → squeeze y   (gate Horner-folding challenge)
+absorb(h_commitments)                     → squeeze x   (shared evaluation point)
+absorb(all_evaluations)                   → squeeze x₁, x₂
+absorb(fCom)                              → squeeze x₃  (GWC opening point)
+absorb(q_evals_on_x₃)                    → squeeze x₄
 ```
+
+Note that `β` is the challenge for **both** the permutation argument and the LogUp
+lookup argument; `γ` is used only for the permutation argument.
 
 Because every commitment is absorbed before its associated challenge is
 squeezed, a cheating prover cannot adaptively choose their commitments to
@@ -197,19 +201,33 @@ to keep polynomial degrees manageable.
 
 ---
 
-## 8. The lookup argument (Plookup)
+## 8. The lookup argument (LogUp)
 
 Some constraints are most naturally expressed as "this value is in this table"
-— for example, range checks or S-box lookups. The **Plookup argument** handles
-this without encoding the table explicitly in a gate.
+— for example, range checks or S-box lookups. midnight-zk uses the **LogUp**
+argument (v7), based on the logarithmic-derivative identity:
 
-The prover sorts and permutes the values to create an auxiliary polynomial
-`A'_k(X)` (permuted inputs) and `S'_k(X)` (permuted table) such that if every
-input is in the table, the sorted sequences differ only in consecutive
-duplicates. A second grand product argument checks this sorting property.
+```
+Σ_i 1/(f_i + β) = Σ_j m_j/(t_j + β)
+```
 
-Five evaluations per lookup (at `x`, `xω`, `xω⁻¹`) are sent by the prover
-and checked by five constraint expressions in `computeHEval`.
+where `f_i` are the (θ-compressed) input expressions, `t_j` are the table entries,
+`m_j` are their multiplicities, and `β` is a Fiat-Shamir challenge.
+
+The prover commits to a **multiplicity polynomial** `m(X)` (one per lookup), `nc`
+**helper polynomials** `h_0(X), …, h_{nc−1}(X)` (one per chunk of parallel inputs),
+and an **accumulator** `Z(X)` that certifies the telescoping sum.
+
+The three types of constraint per lookup are:
+
+- **Boundary**: `(l₀ + l_last) · Z(x) = 0` — forces Z to be zero at the boundary rows.
+- **Helper** (one per chunk c): `h_c · Π_j(f_j+β) − Σ_j Π_{k≠j}(f_k+β) = 0` — certifies
+  that `h_c = Σ_j 1/(f_j+β)` as a polynomial identity.
+- **Accumulator**: `activeRows · ((Z_next − Z − sel·Σ_c h_c) · (t+β) + m) = 0` — certifies
+  the running sum `Z(ωX) − Z(X) = sel(X) · Σ_c h_c(X) − m(X)/(t(X)+β)`.
+
+Only the challenge `β` is needed (not `γ`). Evaluations sent per lookup at `x`: one
+`mult_eval`, `nc` `helper_evals`, one `accum_eval`, and one `accum_next_eval` (at `xω`).
 
 ---
 
@@ -350,9 +368,10 @@ The complete verification flow:
 7. Accept iff the pairing holds.
 ```
 
-The key separation: `computeHEval` answers "what should h(x) equal given the
-constraint system?" and `verifyGwc` answers "does the prover's committed h
-actually open to that?". Both are necessary — neither alone is sufficient.
+The key separation: `computeHEval` answers "what should the linearization
+commitment `lin_com` evaluate to at x, given the constraint system?" and
+`verifyGwc` answers "does the prover's committed `lin_com` actually open to
+that?". Both are necessary — neither alone is sufficient.
 
 ---
 
@@ -373,3 +392,24 @@ G1-zero placeholder) while keeping the constraint system correct.
 The **trash argument** handles circuits that require extra blinding commitments
 beyond the standard `blinding_factors` rows. It adds one extra polynomial per
 trashcan, with its own grand-product-style constraint and challenge.
+
+**Linearization commitment**: midnight-zk does not commit to the vanishing quotient
+`h(X)` directly. Instead the prover commits to the **linearization polynomial**:
+
+```
+L(X) = (1 − x^n) · h(X) + Σ_k c_k · S_k(X)
+```
+
+where `S_k` are the *simple-selector* fixed columns (boolean activators that are
+optimised away from the proof stream) and `c_k` are Fiat-Shamir-derived scalars
+computed during the gate constraint evaluation. The verifier reconstructs
+`L(x) = linComEval` from the gate fold without ever seeing `S_k(x)` (substituting 1),
+then the KZG opening check enforces consistency. This folds the selector
+commitments `[S_k(s)]₁` into the H slot MSM, which covers both the h-piece
+commitments and the selector column commitments (see VERIFIER_SPEC.md §7.2).
+
+**Fewer-point-sets**: when the `fewer-point-sets` feature is active, all polynomials
+are merged into a single rotation set by adding synthetic *dummy evaluations* for
+non-native rotation points. This reduces the number of Lagrange interpolations and
+MSMs in the GWC check, lowering on-chain verification cost at the price of a slightly
+larger proof.

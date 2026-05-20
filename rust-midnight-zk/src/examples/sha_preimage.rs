@@ -17,7 +17,7 @@ use midnight_circuits::{
     types::{AssignedByte, Instantiable},
 };
 use midnight_proofs::{circuit::{Layouter, Value}, plonk::Error};
-use midnight_zk_stdlib::{utils::plonk_api::filecoin_srs, Relation, ZkStdLib, ZkStdLibArch};
+use midnight_zk_stdlib::{utils::plonk_api::srs_for_test, Relation, ZkStdLib, ZkStdLibArch};
 use rand::rngs::OsRng;
 use sha2::Digest;
 use crate::circuit_params::write_json_all_artifacts;
@@ -65,9 +65,8 @@ impl Relation for ShaPreImageCircuit {
 }
 
 pub fn run(base_dir: &str) {
-    let srs = filecoin_srs(K);
-
     let relation = ShaPreImageCircuit;
+    let srs = srs_for_test(&relation, Some(K));
     let vk = midnight_zk_stdlib::setup_vk(&srs, &relation);
     let pk = midnight_zk_stdlib::setup_pk(&relation, &vk);
 

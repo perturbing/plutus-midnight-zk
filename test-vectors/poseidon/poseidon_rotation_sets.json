@@ -1,282 +1,18 @@
 {
-  "num_sets": 4,
+  "num_sets": 1,
   "sets": [
     {
       "rotations": [
-        0
-      ],
-      "slots": [
-        {
-          "eval_idxs": [
-            3
-          ],
-          "index": 3,
-          "poly_kind": "Advice"
-        },
-        {
-          "eval_idxs": [
-            4
-          ],
-          "index": 4,
-          "poly_kind": "Advice"
-        },
-        {
-          "eval_idxs": [
-            8
-          ],
-          "index": 5,
-          "poly_kind": "Advice"
-        },
-        {
-          "eval_idxs": [
-            9
-          ],
-          "index": 6,
-          "poly_kind": "Advice"
-        },
-        {
-          "eval_idxs": [
-            10
-          ],
-          "index": 7,
-          "poly_kind": "Advice"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 0,
-          "poly_kind": "Instance"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 0,
-          "poly_kind": "LookupTable"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 0,
-          "poly_kind": "Trash"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 9,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            1
-          ],
-          "index": 4,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            2
-          ],
-          "index": 5,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            3
-          ],
-          "index": 6,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            4
-          ],
-          "index": 7,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            5
-          ],
-          "index": 8,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            6
-          ],
-          "index": 0,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            7
-          ],
-          "index": 1,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            8
-          ],
-          "index": 2,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            9
-          ],
-          "index": 3,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            10
-          ],
-          "index": 10,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            11
-          ],
-          "index": 11,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            12
-          ],
-          "index": 12,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            13
-          ],
-          "index": 13,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            14
-          ],
-          "index": 14,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            15
-          ],
-          "index": 15,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            16
-          ],
-          "index": 16,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            17
-          ],
-          "index": 17,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            18
-          ],
-          "index": 18,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 0,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 1,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 2,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 3,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 4,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 5,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 6,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 7,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 0,
-          "poly_kind": "H"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 0,
-          "poly_kind": "Random"
-        }
-      ]
-    },
-    {
-      "rotations": [
         0,
-        1
+        1,
+        -9
       ],
       "slots": [
         {
           "eval_idxs": [
             0,
-            5
+            5,
+            51
           ],
           "index": 0,
           "poly_kind": "Advice"
@@ -284,7 +20,8 @@
         {
           "eval_idxs": [
             1,
-            6
+            6,
+            52
           ],
           "index": 1,
           "poly_kind": "Advice"
@@ -292,69 +29,344 @@
         {
           "eval_idxs": [
             2,
-            7
+            7,
+            53
           ],
           "index": 2,
           "poly_kind": "Advice"
         },
         {
           "eval_idxs": [
+            3,
+            54,
+            55
+          ],
+          "index": 3,
+          "poly_kind": "Advice"
+        },
+        {
+          "eval_idxs": [
+            4,
+            56,
+            57
+          ],
+          "index": 4,
+          "poly_kind": "Advice"
+        },
+        {
+          "eval_idxs": [
+            8,
+            58,
+            59
+          ],
+          "index": 5,
+          "poly_kind": "Advice"
+        },
+        {
+          "eval_idxs": [
+            9,
+            60,
+            61
+          ],
+          "index": 6,
+          "poly_kind": "Advice"
+        },
+        {
+          "eval_idxs": [
+            10,
+            62,
+            63
+          ],
+          "index": 7,
+          "poly_kind": "Advice"
+        },
+        {
+          "eval_idxs": [
             0,
-            0
+            64,
+            65
+          ],
+          "index": 0,
+          "poly_kind": "Instance"
+        },
+        {
+          "eval_idxs": [
+            38,
+            39,
+            40
+          ],
+          "index": 0,
+          "poly_kind": "PermProd"
+        },
+        {
+          "eval_idxs": [
+            41,
+            42,
+            43
+          ],
+          "index": 1,
+          "poly_kind": "PermProd"
+        },
+        {
+          "eval_idxs": [
+            44,
+            45,
+            66
           ],
           "index": 2,
           "poly_kind": "PermProd"
         },
         {
           "eval_idxs": [
-            0,
-            0
+            46,
+            67,
+            68
           ],
           "index": 0,
-          "poly_kind": "LookupProd"
-        }
-      ]
-    },
-    {
-      "rotations": [
-        0,
-        -1
-      ],
-      "slots": [
+          "poly_kind": "LogupMult"
+        },
         {
           "eval_idxs": [
-            0,
-            0
+            47,
+            69,
+            70
           ],
           "index": 0,
-          "poly_kind": "LookupInput"
-        }
-      ]
-    },
-    {
-      "rotations": [
-        0,
-        1,
-        -7
-      ],
-      "slots": [
+          "poly_kind": "LogupHelper"
+        },
         {
           "eval_idxs": [
-            0,
-            0,
-            0
+            48,
+            49,
+            71
           ],
           "index": 0,
-          "poly_kind": "PermProd"
+          "poly_kind": "LogupAccum"
+        },
+        {
+          "eval_idxs": [
+            50,
+            72,
+            73
+          ],
+          "index": 0,
+          "poly_kind": "Trash"
+        },
+        {
+          "eval_idxs": [
+            11,
+            74,
+            75
+          ],
+          "index": 9,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            12,
+            76,
+            77
+          ],
+          "index": 4,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            13,
+            78,
+            79
+          ],
+          "index": 5,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            14,
+            80,
+            81
+          ],
+          "index": 6,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            15,
+            82,
+            83
+          ],
+          "index": 7,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            16,
+            84,
+            85
+          ],
+          "index": 8,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            17,
+            86,
+            87
+          ],
+          "index": 0,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            18,
+            88,
+            89
+          ],
+          "index": 1,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            19,
+            90,
+            91
+          ],
+          "index": 2,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            20,
+            92,
+            93
+          ],
+          "index": 3,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            21,
+            94,
+            95
+          ],
+          "index": 10,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            22,
+            96,
+            97
+          ],
+          "index": 11,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            23,
+            98,
+            99
+          ],
+          "index": 12,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            27,
+            100,
+            101
+          ],
+          "index": 16,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            29,
+            102,
+            103
+          ],
+          "index": 18,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            30,
+            104,
+            105
+          ],
+          "index": 0,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            31,
+            106,
+            107
+          ],
+          "index": 1,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            32,
+            108,
+            109
+          ],
+          "index": 2,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            33,
+            110,
+            111
+          ],
+          "index": 3,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            34,
+            112,
+            113
+          ],
+          "index": 4,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            35,
+            114,
+            115
+          ],
+          "index": 5,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            36,
+            116,
+            117
+          ],
+          "index": 6,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            37,
+            118,
+            119
+          ],
+          "index": 7,
+          "poly_kind": "PermSigma"
         },
         {
           "eval_idxs": [
             0,
-            0,
-            0
+            120,
+            121
           ],
-          "index": 1,
-          "poly_kind": "PermProd"
+          "index": 0,
+          "poly_kind": "H"
         }
       ]
     }

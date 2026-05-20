@@ -1,616 +1,20 @@
 {
-  "num_sets": 5,
+  "num_sets": 1,
   "sets": [
-    {
-      "rotations": [
-        0
-      ],
-      "slots": [
-        {
-          "eval_idxs": [
-            24
-          ],
-          "index": 8,
-          "poly_kind": "Advice"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 0,
-          "poly_kind": "Instance"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 0,
-          "poly_kind": "LookupTable"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 1,
-          "poly_kind": "LookupTable"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 2,
-          "poly_kind": "LookupTable"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 3,
-          "poly_kind": "LookupTable"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 4,
-          "poly_kind": "LookupTable"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 5,
-          "poly_kind": "LookupTable"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 6,
-          "poly_kind": "LookupTable"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 9,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            1
-          ],
-          "index": 4,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            2
-          ],
-          "index": 5,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            3
-          ],
-          "index": 6,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            4
-          ],
-          "index": 7,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            5
-          ],
-          "index": 8,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            6
-          ],
-          "index": 0,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            7
-          ],
-          "index": 1,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            8
-          ],
-          "index": 2,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            9
-          ],
-          "index": 3,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            10
-          ],
-          "index": 10,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            11
-          ],
-          "index": 11,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            12
-          ],
-          "index": 12,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            13
-          ],
-          "index": 13,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            14
-          ],
-          "index": 14,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            15
-          ],
-          "index": 15,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            16
-          ],
-          "index": 16,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            17
-          ],
-          "index": 17,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            18
-          ],
-          "index": 18,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            19
-          ],
-          "index": 19,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            20
-          ],
-          "index": 20,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            21
-          ],
-          "index": 21,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            22
-          ],
-          "index": 22,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            23
-          ],
-          "index": 23,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            24
-          ],
-          "index": 24,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            25
-          ],
-          "index": 25,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            26
-          ],
-          "index": 26,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            27
-          ],
-          "index": 27,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            28
-          ],
-          "index": 28,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            29
-          ],
-          "index": 29,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            30
-          ],
-          "index": 30,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            31
-          ],
-          "index": 31,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            32
-          ],
-          "index": 32,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            33
-          ],
-          "index": 33,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            34
-          ],
-          "index": 34,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            35
-          ],
-          "index": 35,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            36
-          ],
-          "index": 36,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            37
-          ],
-          "index": 37,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            38
-          ],
-          "index": 38,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            39
-          ],
-          "index": 39,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            40
-          ],
-          "index": 40,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            41
-          ],
-          "index": 41,
-          "poly_kind": "Fixed"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 0,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 1,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 2,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 3,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 4,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 5,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 6,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 7,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 8,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 9,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 10,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 11,
-          "poly_kind": "PermSigma"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 0,
-          "poly_kind": "H"
-        },
-        {
-          "eval_idxs": [
-            0
-          ],
-          "index": 0,
-          "poly_kind": "Random"
-        }
-      ]
-    },
-    {
-      "rotations": [
-        0,
-        1
-      ],
-      "slots": [
-        {
-          "eval_idxs": [
-            0,
-            0
-          ],
-          "index": 3,
-          "poly_kind": "PermProd"
-        },
-        {
-          "eval_idxs": [
-            0,
-            0
-          ],
-          "index": 0,
-          "poly_kind": "LookupProd"
-        },
-        {
-          "eval_idxs": [
-            0,
-            0
-          ],
-          "index": 1,
-          "poly_kind": "LookupProd"
-        },
-        {
-          "eval_idxs": [
-            0,
-            0
-          ],
-          "index": 2,
-          "poly_kind": "LookupProd"
-        },
-        {
-          "eval_idxs": [
-            0,
-            0
-          ],
-          "index": 3,
-          "poly_kind": "LookupProd"
-        },
-        {
-          "eval_idxs": [
-            0,
-            0
-          ],
-          "index": 4,
-          "poly_kind": "LookupProd"
-        },
-        {
-          "eval_idxs": [
-            0,
-            0
-          ],
-          "index": 5,
-          "poly_kind": "LookupProd"
-        },
-        {
-          "eval_idxs": [
-            0,
-            0
-          ],
-          "index": 6,
-          "poly_kind": "LookupProd"
-        }
-      ]
-    },
-    {
-      "rotations": [
-        0,
-        -1
-      ],
-      "slots": [
-        {
-          "eval_idxs": [
-            0,
-            0
-          ],
-          "index": 0,
-          "poly_kind": "LookupInput"
-        },
-        {
-          "eval_idxs": [
-            0,
-            0
-          ],
-          "index": 1,
-          "poly_kind": "LookupInput"
-        },
-        {
-          "eval_idxs": [
-            0,
-            0
-          ],
-          "index": 2,
-          "poly_kind": "LookupInput"
-        },
-        {
-          "eval_idxs": [
-            0,
-            0
-          ],
-          "index": 3,
-          "poly_kind": "LookupInput"
-        },
-        {
-          "eval_idxs": [
-            0,
-            0
-          ],
-          "index": 4,
-          "poly_kind": "LookupInput"
-        },
-        {
-          "eval_idxs": [
-            0,
-            0
-          ],
-          "index": 5,
-          "poly_kind": "LookupInput"
-        },
-        {
-          "eval_idxs": [
-            0,
-            0
-          ],
-          "index": 6,
-          "poly_kind": "LookupInput"
-        }
-      ]
-    },
     {
       "rotations": [
         0,
         1,
-        -1
+        -1,
+        -10
       ],
       "slots": [
         {
           "eval_idxs": [
             0,
             5,
-            13
+            13,
+            102
           ],
           "index": 0,
           "poly_kind": "Advice"
@@ -619,7 +23,8 @@
           "eval_idxs": [
             1,
             6,
-            14
+            14,
+            103
           ],
           "index": 1,
           "poly_kind": "Advice"
@@ -628,7 +33,8 @@
           "eval_idxs": [
             2,
             7,
-            19
+            19,
+            104
           ],
           "index": 2,
           "poly_kind": "Advice"
@@ -637,7 +43,8 @@
           "eval_idxs": [
             3,
             15,
-            11
+            11,
+            105
           ],
           "index": 3,
           "poly_kind": "Advice"
@@ -646,7 +53,8 @@
           "eval_idxs": [
             4,
             16,
-            12
+            12,
+            106
           ],
           "index": 4,
           "poly_kind": "Advice"
@@ -655,7 +63,8 @@
           "eval_idxs": [
             8,
             22,
-            21
+            21,
+            107
           ],
           "index": 5,
           "poly_kind": "Advice"
@@ -664,7 +73,8 @@
           "eval_idxs": [
             9,
             18,
-            17
+            17,
+            108
           ],
           "index": 6,
           "poly_kind": "Advice"
@@ -673,46 +83,491 @@
           "eval_idxs": [
             10,
             23,
-            20
+            20,
+            109
           ],
           "index": 7,
           "poly_kind": "Advice"
-        }
-      ]
-    },
-    {
-      "rotations": [
-        0,
-        1,
-        -6
-      ],
-      "slots": [
+        },
+        {
+          "eval_idxs": [
+            24,
+            110,
+            111,
+            112
+          ],
+          "index": 8,
+          "poly_kind": "Advice"
+        },
         {
           "eval_idxs": [
             0,
-            0,
-            0
+            113,
+            114,
+            115
+          ],
+          "index": 0,
+          "poly_kind": "Instance"
+        },
+        {
+          "eval_idxs": [
+            79,
+            80,
+            116,
+            81
           ],
           "index": 0,
           "poly_kind": "PermProd"
         },
         {
           "eval_idxs": [
-            0,
-            0,
-            0
+            82,
+            83,
+            117,
+            84
           ],
           "index": 1,
           "poly_kind": "PermProd"
         },
         {
           "eval_idxs": [
-            0,
-            0,
-            0
+            85,
+            86,
+            118,
+            87
           ],
           "index": 2,
           "poly_kind": "PermProd"
+        },
+        {
+          "eval_idxs": [
+            88,
+            89,
+            119,
+            120
+          ],
+          "index": 3,
+          "poly_kind": "PermProd"
+        },
+        {
+          "eval_idxs": [
+            90,
+            121,
+            122,
+            123
+          ],
+          "index": 0,
+          "poly_kind": "LogupMult"
+        },
+        {
+          "eval_idxs": [
+            91,
+            124,
+            125,
+            126
+          ],
+          "index": 0,
+          "poly_kind": "LogupHelper"
+        },
+        {
+          "eval_idxs": [
+            92,
+            93,
+            127,
+            128
+          ],
+          "index": 0,
+          "poly_kind": "LogupAccum"
+        },
+        {
+          "eval_idxs": [
+            94,
+            129,
+            130,
+            131
+          ],
+          "index": 1,
+          "poly_kind": "LogupMult"
+        },
+        {
+          "eval_idxs": [
+            95,
+            132,
+            133,
+            134
+          ],
+          "index": 1,
+          "poly_kind": "LogupHelper"
+        },
+        {
+          "eval_idxs": [
+            96,
+            97,
+            135,
+            136
+          ],
+          "index": 1,
+          "poly_kind": "LogupAccum"
+        },
+        {
+          "eval_idxs": [
+            98,
+            137,
+            138,
+            139
+          ],
+          "index": 2,
+          "poly_kind": "LogupMult"
+        },
+        {
+          "eval_idxs": [
+            99,
+            140,
+            141,
+            142
+          ],
+          "index": 2,
+          "poly_kind": "LogupHelper"
+        },
+        {
+          "eval_idxs": [
+            100,
+            101,
+            143,
+            144
+          ],
+          "index": 2,
+          "poly_kind": "LogupAccum"
+        },
+        {
+          "eval_idxs": [
+            25,
+            145,
+            146,
+            147
+          ],
+          "index": 9,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            26,
+            148,
+            149,
+            150
+          ],
+          "index": 4,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            27,
+            151,
+            152,
+            153
+          ],
+          "index": 5,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            28,
+            154,
+            155,
+            156
+          ],
+          "index": 6,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            29,
+            157,
+            158,
+            159
+          ],
+          "index": 7,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            30,
+            160,
+            161,
+            162
+          ],
+          "index": 8,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            31,
+            163,
+            164,
+            165
+          ],
+          "index": 0,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            32,
+            166,
+            167,
+            168
+          ],
+          "index": 1,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            33,
+            169,
+            170,
+            171
+          ],
+          "index": 2,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            34,
+            172,
+            173,
+            174
+          ],
+          "index": 3,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            35,
+            175,
+            176,
+            177
+          ],
+          "index": 10,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            36,
+            178,
+            179,
+            180
+          ],
+          "index": 11,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            37,
+            181,
+            182,
+            183
+          ],
+          "index": 12,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            38,
+            184,
+            185,
+            186
+          ],
+          "index": 13,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            39,
+            187,
+            188,
+            189
+          ],
+          "index": 14,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            40,
+            190,
+            191,
+            192
+          ],
+          "index": 15,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            41,
+            193,
+            194,
+            195
+          ],
+          "index": 16,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            45,
+            196,
+            197,
+            198
+          ],
+          "index": 20,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            46,
+            199,
+            200,
+            201
+          ],
+          "index": 21,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            66,
+            202,
+            203,
+            204
+          ],
+          "index": 41,
+          "poly_kind": "Fixed"
+        },
+        {
+          "eval_idxs": [
+            67,
+            205,
+            206,
+            207
+          ],
+          "index": 0,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            68,
+            208,
+            209,
+            210
+          ],
+          "index": 1,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            69,
+            211,
+            212,
+            213
+          ],
+          "index": 2,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            70,
+            214,
+            215,
+            216
+          ],
+          "index": 3,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            71,
+            217,
+            218,
+            219
+          ],
+          "index": 4,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            72,
+            220,
+            221,
+            222
+          ],
+          "index": 5,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            73,
+            223,
+            224,
+            225
+          ],
+          "index": 6,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            74,
+            226,
+            227,
+            228
+          ],
+          "index": 7,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            75,
+            229,
+            230,
+            231
+          ],
+          "index": 8,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            76,
+            232,
+            233,
+            234
+          ],
+          "index": 9,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            77,
+            235,
+            236,
+            237
+          ],
+          "index": 10,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            78,
+            238,
+            239,
+            240
+          ],
+          "index": 11,
+          "poly_kind": "PermSigma"
+        },
+        {
+          "eval_idxs": [
+            0,
+            241,
+            242,
+            243
+          ],
+          "index": 0,
+          "poly_kind": "H"
         }
       ]
     }

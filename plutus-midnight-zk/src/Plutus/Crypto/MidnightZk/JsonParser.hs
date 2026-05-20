@@ -26,6 +26,9 @@ module Plutus.Crypto.MidnightZk.JsonParser (
     parsePlutusProof,
     parseRotationSets,
     parseInstance,
+    prepareGateVals,
+    prepareGatesBySelCol,
+    prepareLogupPreEvals,
 
     -- * Low-level helpers (exported for testing)
     leHexToInteger,
@@ -39,6 +42,7 @@ import qualified Data.Aeson.Key as AesonKey
 import qualified Data.Aeson.Types as Aeson
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as B16
+import Data.List (nub)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -182,7 +186,7 @@ parsePlutusVK vkV ccV =
         Nothing -> error "parsePlutusVK: failed to parse VK JSON"
   where
     -- Parse the circuit_constraint JSON once and bind the results.
-    (gatePolys, permCTs, liExprs, ltExprs, trashSels, trashCons) =
+    (gatePolys, permCTs, liExprs, ltExprs, lsExprs, trashSels, trashCons, gateSelCols, simpleSelColList) =
         parseCircuitConstraint ccV
 
     parseVK = Aeson.withObject "VK" $ \o -> do
@@ -198,6 +202,7 @@ parsePlutusVK vkV ccV =
         permComs <- o .: "permutation_commitments"
         sG2Hex <- o .: "s_g2"
         trHex <- o .: "transcript_repr"
+        simpleMask <- (o .: "simple_selector_mask" :: Aeson.Parser [Bool])
 
         let q = bls12_381_scalar_prime
             n = 2 ^ (k :: Integer)
@@ -231,12 +236,16 @@ parsePlutusVK vkV ccV =
                 , vkPermSigmaComs = map mkG1 permComs
                 , vkSrsG2 = toBuiltinBS (hexToBytes sG2Hex)
                 , vkTranscriptRepr = toBuiltinBS (hexToBytes trHex)
+                , vkSimpleSelectorMask = simpleMask
                 , vkGatePolys = gatePolys
                 , vkPermColTypes = permCTs
                 , vkLookupInputExprs = liExprs
                 , vkLookupTableExprs = ltExprs
+                , vkLookupSelectorExprs = lsExprs
                 , vkTrashSelectors = trashSels
                 , vkTrashConstraintExprs = trashCons
+                , vkGateSelCols = gateSelCols
+                , vkSimpleSelColList = simpleSelColList
                 }
 
 {- | Parse @*_circuit_constraint.json@.
@@ -252,10 +261,13 @@ parseCircuitConstraint ::
     Value ->
     ( [GateExpr]
     , [(Integer, Integer)]
-    , [[GateExpr]]
+    , [[[[GateExpr]]]]
     , [[GateExpr]]
     , [GateExpr]
+    , [GateExpr]
     , [[GateExpr]]
+    , [Integer]   -- gate_sel_cols: per gate poly, fixed col idx of simple sel or -1
+    , [Integer]   -- simple_sel_col_list: unique non-(-1) values from gate_sel_cols
     )
 parseCircuitConstraint v =
     case Aeson.parseMaybe parseCC v of
@@ -264,19 +276,32 @@ parseCircuitConstraint v =
   where
     parseCC = Aeson.withObject "CircuitConstraint" $ \o -> do
         gatePolyVs <- (o .: "gate_polys" :: Aeson.Parser [Value])
+        gateSelColVs <- (o .: "gate_sel_cols" :: Aeson.Parser [Value])
         permColVs <- (o .: "perm_col_types" :: Aeson.Parser [Value])
-        liExprVs <- (o .: "lookup_input_exprs" :: Aeson.Parser [[Value]])
+        -- lookup_input_exprs: [lookup][chunk][parallel_input][width_exprs]
+        liExprVs <- (o .: "lookup_input_exprs" :: Aeson.Parser [[[[Value]]]])
         ltExprVs <- (o .: "lookup_table_exprs" :: Aeson.Parser [[Value]])
+        lsExprVs <- (o .: "lookup_selector_exprs" :: Aeson.Parser [Value])
         tSelVs <- (o .: "trash_selectors" :: Aeson.Parser [Value])
         tConVs <- (o .: "trash_constraint_exprs" :: Aeson.Parser [[Value]])
+        let gateSelCols = map parseGateSelCol gateSelColVs
+            simpleSelColList = nub (filter (>= 0) gateSelCols)
         return
             ( map instrsToGateExpr gatePolyVs
             , map parsePermColType permColVs
-            , map (map instrsToGateExpr) liExprVs
+            , map (map (map (map instrsToGateExpr))) liExprVs
             , map (map instrsToGateExpr) ltExprVs
+            , map instrsToGateExpr lsExprVs
             , map instrsToGateExpr tSelVs
             , map (map instrsToGateExpr) tConVs
+            , gateSelCols
+            , simpleSelColList
             )
+
+    parseGateSelCol :: Value -> Integer
+    parseGateSelCol Null = -1
+    parseGateSelCol (Number n) = floor n
+    parseGateSelCol v' = error $ "parseGateSelCol: expected null or number, got: " ++ show v'
 
     parsePermColType :: Value -> (Integer, Integer)
     parsePermColType v' =
@@ -301,61 +326,64 @@ parsePlutusProof v =
         Nothing -> error "parsePlutusProof: failed"
   where
     parseProof = Aeson.withObject "Proof" $ \o -> do
-        advComs <- map mkG1 <$> (o .: "advice_commitments" :: Aeson.Parser [Text])
-        luPerms <- (o .: "lookup_permuted_commitments" :: Aeson.Parser [Value])
-        ppComs <- map mkG1 <$> (o .: "permutation_product_commitments" :: Aeson.Parser [Text])
-        lpComs <- map mkG1 <$> (o .: "lookup_product_commitments" :: Aeson.Parser [Text])
-        trComs <- map mkG1 <$> (o .: "trash_commitments" :: Aeson.Parser [Text])
-        randCom <- mkG1 <$> (o .: "random_poly_commitment" :: Aeson.Parser Text)
-        hComs <- map mkG1 <$> (o .: "h_commitments" :: Aeson.Parser [Text])
+        advComs  <- map mkG1 <$> (o .: "advice_commitments" :: Aeson.Parser [Text])
+        multComs <- map mkG1 <$> (o .: "lookup_multiplicity_commitments" :: Aeson.Parser [Text])
+        ppComs   <- map mkG1 <$> (o .: "permutation_product_commitments" :: Aeson.Parser [Text])
+        -- lookup_logup_commitments: array of {helpers:[...], accumulator:"..."}
+        logupComs <- (o .: "lookup_logup_commitments" :: Aeson.Parser [Value])
+        trComs   <- map mkG1 <$> (o .: "trash_commitments" :: Aeson.Parser [Text])
+        hComs    <- map mkG1 <$> (o .: "h_commitments" :: Aeson.Parser [Text])
 
         advEvals <- map leHexToInteger <$> (o .: "advice_evals" :: Aeson.Parser [Text])
         fixEvals <- map leHexToInteger <$> (o .: "fixed_evals" :: Aeson.Parser [Text])
-        randEval <- leHexToInteger <$> (o .: "random_eval" :: Aeson.Parser Text)
         sigEvals <- map leHexToInteger <$> (o .: "sigma_evals" :: Aeson.Parser [Text])
         ppEvalVs <- (o .: "permutation_product_evals" :: Aeson.Parser [Value])
         luEvalVs <- (o .: "lookup_evals" :: Aeson.Parser [Value])
-        trEvals <- map leHexToInteger <$> (o .: "trash_evals" :: Aeson.Parser [Text])
+        trEvals  <- map leHexToInteger <$> (o .: "trash_evals"  :: Aeson.Parser [Text])
+        dummyEvals <- map leHexToInteger <$> (o .: "dummy_evals" :: Aeson.Parser [Text])
 
         gwcV <- (o .: "gwc" :: Aeson.Parser Value)
         (fCom, qEvalsOnX3, wCom) <- parseGwc gwcV
 
-        let luInputComs = map (mkG1 . getField "permuted_input") luPerms
-            luTableComs = map (mkG1 . getField "permuted_table") luPerms
-            ppFlat = concatMap flattenPPEval ppEvalVs
-            luFlat = concatMap flattenLuEval luEvalVs
+        let (helperComs, accumComs) = unzip (map parseLogupComs logupComs)
+            ppFlat    = concatMap flattenPPEval ppEvalVs
+            logupFlat = concatMap flattenLogupEval luEvalVs
 
         return
             Proof
-                { prfAdviceComs = advComs
-                , prfLookupInputComs = luInputComs
-                , prfLookupTableComs = luTableComs
-                , prfPermProdComs = ppComs
-                , prfLookupProdComs = lpComs
-                , prfTrashComs = trComs
-                , prfRandomCom = randCom
-                , prfHComs = hComs
-                , prfFCom = fCom
-                , prfPiPt = wCom
-                , prfAdviceEvals = advEvals
-                , prfFixedEvals = fixEvals
-                , prfRandomEval = randEval
-                , prfPermSigmaEvals = sigEvals
-                , prfPermProdEvals = ppFlat
-                , prfLookupEvals = luFlat
-                , prfTrashEvals = trEvals
-                , prfQEvalsOnX3 = qEvalsOnX3
+                { prfAdviceComs       = advComs
+                , prfLookupMultComs   = multComs
+                , prfPermProdComs     = ppComs
+                , prfLookupHelperComs = helperComs
+                , prfLookupAccumComs  = accumComs
+                , prfTrashComs        = trComs
+                , prfHComs            = hComs
+                , prfFCom             = fCom
+                , prfPiPt             = wCom
+                , prfAdviceEvals      = advEvals
+                , prfFixedEvals       = fixEvals
+                , prfPermSigmaEvals   = sigEvals
+                , prfPermProdEvals    = ppFlat
+                , prfLogupEvals       = logupFlat
+                , prfTrashEvals       = trEvals
+                , prfDummyEvals       = dummyEvals
+                , prfQEvalsOnX3       = qEvalsOnX3
                 }
 
     mkG1 :: Text -> BuiltinByteString
     mkG1 = toBuiltinBS . hexToBytes
 
-    -- Extract a Text field from a JSON object (used for lookup permuted coms).
-    getField :: Text -> Value -> Text
-    getField key val =
-        case Aeson.parseMaybe (Aeson.withObject "obj" (.: AesonKey.fromText key)) val of
-            Just t -> t
-            Nothing -> error $ "getField: key not found: " ++ T.unpack key
+    -- Parse one element of lookup_logup_commitments → (helper_coms, accum_com)
+    parseLogupComs :: Value -> ([BuiltinByteString], BuiltinByteString)
+    parseLogupComs val =
+        case Aeson.parseMaybe p val of
+            Just r -> r
+            Nothing -> error "parseLogupComs: failed"
+      where
+        p = Aeson.withObject "LogupComs" $ \o -> do
+            hs  <- map mkG1 <$> (o .: "helpers"     :: Aeson.Parser [Text])
+            acc <- mkG1     <$> (o .: "accumulator"  :: Aeson.Parser Text)
+            return (hs, acc)
 
     parseGwc :: Value -> Aeson.Parser (BuiltinByteString, [Integer], BuiltinByteString)
     parseGwc = Aeson.withObject "GWC" $ \o -> do
@@ -366,8 +394,6 @@ parsePlutusProof v =
 
     -- Flatten one permutation product eval object.
     -- The JSON has {"eval":"...", "next_eval":"...", "last_eval": null | "..."}.
-    -- Non-last chunks: [eval, next_eval, last_eval]  (3 values)
-    -- Last chunk:      [eval, next_eval]             (2 values, last_eval is null)
     flattenPPEval :: Value -> [Integer]
     flattenPPEval val =
         case Aeson.parseMaybe (Aeson.withObject "PPEval" flat) val of
@@ -375,29 +401,26 @@ parsePlutusProof v =
             Nothing -> error "flattenPPEval: failed"
       where
         flat o = do
-            e <- leHexToInteger <$> (o .: "eval" :: Aeson.Parser Text)
+            e  <- leHexToInteger <$> (o .: "eval"      :: Aeson.Parser Text)
             ne <- leHexToInteger <$> (o .: "next_eval" :: Aeson.Parser Text)
             mle <- (o .:? "last_eval" :: Aeson.Parser (Maybe Text))
             return $ case mle of
                 Just le -> [e, ne, leHexToInteger le]
                 Nothing -> [e, ne]
 
-    -- Flatten one lookup eval object into 5 values in the proof order:
-    -- [product_eval, product_next_eval, permuted_input_eval,
-    --  permuted_input_inv_eval, permuted_table_eval]
-    flattenLuEval :: Value -> [Integer]
-    flattenLuEval val =
-        case Aeson.parseMaybe (Aeson.withObject "LuEval" flat) val of
+    -- Flatten one LogUp eval object: mult_eval, helper_evals, accum_eval, accum_next_eval
+    flattenLogupEval :: Value -> [Integer]
+    flattenLogupEval val =
+        case Aeson.parseMaybe (Aeson.withObject "LogupEval" flat) val of
             Just xs -> xs
-            Nothing -> error "flattenLuEval: failed"
+            Nothing -> error "flattenLogupEval: failed"
       where
         flat o = do
-            pe <- leHexToInteger <$> (o .: "product_eval" :: Aeson.Parser Text)
-            pne <- leHexToInteger <$> (o .: "product_next_eval" :: Aeson.Parser Text)
-            pie <- leHexToInteger <$> (o .: "permuted_input_eval" :: Aeson.Parser Text)
-            pii <- leHexToInteger <$> (o .: "permuted_input_inv_eval" :: Aeson.Parser Text)
-            pte <- leHexToInteger <$> (o .: "permuted_table_eval" :: Aeson.Parser Text)
-            return [pe, pne, pie, pii, pte]
+            me  <- leHexToInteger <$> (o .: "mult_eval"       :: Aeson.Parser Text)
+            hes <- map leHexToInteger <$> (o .: "helper_evals" :: Aeson.Parser [Text])
+            ae  <- leHexToInteger <$> (o .: "accum_eval"       :: Aeson.Parser Text)
+            ane <- leHexToInteger <$> (o .: "accum_next_eval"  :: Aeson.Parser Text)
+            return $ me : hes ++ [ae, ane]
 
 -- ---------------------------------------------------------------------------
 -- RotationSets parser
@@ -405,41 +428,55 @@ parsePlutusProof v =
 
 -- | Poly-kind name → 'SlotKind'.
 polyKind :: Text -> SlotKind
-polyKind "Advice" = SKAdvice
-polyKind "Instance" = SKInstance
-polyKind "LookupTable" = SKLookupTable
-polyKind "Trash" = SKTrash
-polyKind "Fixed" = SKFixed
-polyKind "PermSigma" = SKPermSigma
-polyKind "H" = SKH
-polyKind "Random" = SKRandom
-polyKind "PermProd" = SKPermProd
-polyKind "LookupProd" = SKLookupProd
-polyKind "LookupInput" = SKLookupInput
+polyKind "Advice"      = SKAdvice
+polyKind "Instance"    = SKInstance
+polyKind "LogupMult"   = SKLogupMult
+polyKind "Trash"       = SKTrash
+polyKind "Fixed"       = SKFixed
+polyKind "PermSigma"   = SKPermSigma
+polyKind "H"           = SKH
+polyKind "PermProd"    = SKPermProd
+polyKind "LogupAccum"  = SKLogupAccum
+polyKind "LogupHelper" = SKLogupHelper
 polyKind k = error $ "polyKind: unknown kind: " ++ T.unpack k
 
--- | Parse @*_rotation_sets.json@.
-parseRotationSets :: Value -> [RotationSetSpec]
-parseRotationSets v =
-    case Aeson.parseMaybe parseRS v of
+{- | Parse @*_rotation_sets.json@, precomputing per-rotation eval values from the proof.
+
+The @eval_idxs@ in the JSON are absolute offsets into a unified eval array with layout:
+  adv | fix | sigma | permProd | logup | trash | dummy
+
+Rather than storing these absolute indices for O(absIdx) on-chain lookup, we resolve
+them to 'Scalar' values here (off-chain), so on-chain 'getEval' only needs O(rotPos) ≤ O(4).
+-}
+parseRotationSets :: Value -> Proof -> [RotationSetSpec]
+parseRotationSets v prf =
+    let unifiedEvals =
+            map mkScalar (prfAdviceEvals prf)
+                ++ map mkScalar (prfFixedEvals prf)
+                ++ map mkScalar (prfPermSigmaEvals prf)
+                ++ map mkScalar (prfPermProdEvals prf)
+                ++ map mkScalar (prfLogupEvals prf)
+                ++ map mkScalar (prfTrashEvals prf)
+                ++ map mkScalar (prfDummyEvals prf)
+    in case Aeson.parseMaybe (parseRS unifiedEvals) v of
         Just specs -> specs
         Nothing -> error "parseRotationSets: failed"
   where
-    parseRS = Aeson.withObject "RotationSets" $ \o -> do
+    parseRS ue = Aeson.withObject "RotationSets" $ \o -> do
         sets <- (o .: "sets" :: Aeson.Parser [Value])
-        mapM parseSet sets
+        mapM (parseSet ue) sets
 
-    parseSet = Aeson.withObject "Set" $ \o -> do
+    parseSet ue = Aeson.withObject "Set" $ \o -> do
         rots <- (o .: "rotations" :: Aeson.Parser [Integer])
         slots <- (o .: "slots" :: Aeson.Parser [Value])
-        slotSpecs <- mapM (parseSlot (length rots)) slots
+        slotSpecs <- mapM (parseSlot ue (length rots)) slots
         return
             RotationSetSpec
                 { rssRotations = rots
                 , rssSlots = slotSpecs
                 }
 
-    parseSlot _numRots = Aeson.withObject "Slot" $ \o -> do
+    parseSlot ue _numRots = Aeson.withObject "Slot" $ \o -> do
         kindText <- (o .: "poly_kind" :: Aeson.Parser Text)
         idx <- o .: "index"
         evalIdxs <- (o .: "eval_idxs" :: Aeson.Parser [Integer])
@@ -447,8 +484,98 @@ parseRotationSets v =
             SlotSpec
                 { ssKind = polyKind kindText
                 , ssIndex = idx
-                , ssEvalIdxs = evalIdxs
+                , ssEvalVals = map (\i -> ue !! fromIntegral i) evalIdxs
                 }
+
+-- ---------------------------------------------------------------------------
+-- Off-chain gate expression evaluator and gate value precomputation
+-- ---------------------------------------------------------------------------
+
+{- | Evaluate a 'GateExpr' off-chain using plain Haskell arithmetic.
+
+Used by 'prepareGateVals' to substitute advice\/fixed eval values at parse time.
+Uses standard Haskell list '(!!)' (O(qi) but irrelevant off-chain).
+-}
+evalGateOC :: [Scalar] -> [Scalar] -> [Scalar] -> GateExpr -> Scalar
+evalGateOC adv fix inst = go
+  where
+    q = bls12_381_scalar_prime
+    sadd (Scalar a) (Scalar b) = Scalar ((a + b) `mod` q)
+    smul (Scalar a) (Scalar b) = Scalar ((a * b) `mod` q)
+    sneg (Scalar a) = Scalar ((q - a) `mod` q)
+    go (GEConst s) = s
+    go (GEAdv qi) = adv !! fromIntegral qi
+    go (GEFix qi) = fix !! fromIntegral qi
+    go (GEInst qi) = inst !! fromIntegral qi
+    go (GENeg e) = sneg (go e)
+    go (GEAdd a b) = go a `sadd` go b
+    go (GEMul a b) = go a `smul` go b
+    go (GEScale e s) = go e `smul` s
+
+{- | Precompute gate constraint values from the proof off-chain.
+
+Evaluates each gate expression in 'vkGatePolys' using the proof's advice and fixed
+column evaluations. The resulting @[Scalar]@ replaces the on-chain @map evalE (vkGatePolys vk)@
+call in 'computeHEval', eliminating all @adv !! qi@ and @fix !! qi@ traversals
+(which cost O(qi) each in on-chain execution).
+
+All midnight-zk circuits have no @GEInst@ references in gate polynomials, so using
+@instEvals = [0, 0]@ is correct. The KZG pairing check enforces that the precomputed
+values are consistent with the committed polynomials.
+-}
+prepareGateVals :: VerifyingKey -> Proof -> [Scalar]
+prepareGateVals vk prf =
+    let advEvs = map mkScalar (prfAdviceEvals prf)
+        fixEvs = map mkScalar (prfFixedEvals prf)
+        instEvs = [Scalar 0, Scalar 0]
+    in map (evalGateOC advEvs fixEvs instEvs) (vkGatePolys vk)
+
+{- | Precompute gate indices grouped by simple-selector column.
+
+Returns @gatesBySelCol[k] = [j | vkGateSelCols vk !! j == selColList !! k]@,
+i.e., for each unique simple-selector column (in 'vkSimpleSelColList' order),
+the list of gate indices whose selector matches that column.
+
+Passed to 'verify' so that on-chain 'computeHEval' can replace the O(S×G)
+per-selector-column loop with O(G) total index-based lookups.
+-}
+prepareGatesBySelCol :: VerifyingKey -> [[Integer]]
+prepareGatesBySelCol vk =
+    let gateColIdxs = vkGateSelCols vk
+        selColList = vkSimpleSelColList vk
+        indexed = zip [0..] gateColIdxs
+    in map (\sc -> [fromIntegral j | (j, col) <- indexed, col == sc]) selColList
+
+{- | Precompute off-chain the expression values consumed by 'logupHornerForK'.
+
+For each lookup k, evaluates every 'GateExpr' in the lookup input (chunk),
+table, and selector expressions against the proof's advice\/fixed evaluations.
+Returns a flat '[Scalar]' in exactly the order that the on-chain
+'logupHornerForK' consumes them: chunk-major order (outer→inner: lookup,
+chunk, parallel-input, width), then table expressions, then selector.
+
+This eliminates all @adv !! qi@ and @fix !! qi@ on-chain list traversals
+from the LogUp constraint evaluation — replacing O(qi) per-eval traversals
+with O(1) off-chain list accesses that cost nothing at script execution time.
+
+All midnight-zk circuits have no @GEInst@ references in lookup expressions;
+@instEvals = [0, 0]@ is safe and consistent with 'prepareGateVals'.
+-}
+prepareLogupPreEvals :: VerifyingKey -> Proof -> [Scalar]
+prepareLogupPreEvals vk prf =
+    let advEvs  = map mkScalar (prfAdviceEvals prf)
+        fixEvs  = map mkScalar (prfFixedEvals prf)
+        instEvs = [Scalar 0, Scalar 0]
+        evalE   = evalGateOC advEvs fixEvs instEvs
+        numLookups = fromIntegral (ccNumLookups (vkConfig vk))
+    in concatMap (\k ->
+            let chunkExprs  = vkLookupInputExprs vk !! k
+                tableExprs  = vkLookupTableExprs vk !! k
+                selectorExp = vkLookupSelectorExprs vk !! k
+                chunkVals   = concatMap (concatMap (map evalE)) chunkExprs
+                tableVals   = map evalE tableExprs
+            in chunkVals ++ tableVals ++ [evalE selectorExp])
+        [0 .. numLookups - 1]
 
 -- ---------------------------------------------------------------------------
 -- Public inputs parser

@@ -140,35 +140,71 @@ is not read from any JSON file.
 
 ---
 
-## 4. Lookup argument
+## 4. Lookup argument (LogUp v7)
 
-Each lookup argument k contributes 5 expressions.  The key values from
-the proof are:
+midnight-zk uses the **LogUp** argument, based on the logarithmic-derivative
+identity.  The core insight: if every input `f_i` is in table `{t_j}` with
+multiplicity `m_j`, then
 
-| Symbol       | Proof field index | Meaning                         |
+```
+Σ_i 1/(f_i + β) = Σ_j m_j/(t_j + β)
+```
+
+holds for a uniformly random `β`.  Rearranged as a polynomial identity, this
+gives a running-sum (accumulator) argument that requires only one challenge (β),
+not two (β, γ) as in the old Plookup argument.
+
+### 4.1 Per-lookup polynomials
+
+For lookup k with `nc_k` chunks and `m` parallel inputs per chunk:
+
+| Polynomial | Commitment | Evaluations in proof |
 |---|---|---|
-| `prodEval`   | `5k + 0`          | Z_k(x) — lookup grand product   |
-| `prodNext`   | `5k + 1`          | Z_k(ω·x)                        |
-| `inputEval`  | `5k + 2`          | A'_k(x) — permuted input        |
-| `inputInv`   | `5k + 3`          | A'_k(ω⁻¹·x)                     |
-| `tableEval`  | `5k + 4`          | S'_k(x) — permuted table        |
+| `m_k(X)` — multiplicity | `prfLookupMultComs[k]` | `mult_eval = m_k(x)` |
+| `h_{k,c}(X)` — helper for chunk c | `prfLookupHelperComs[flat_idx]` | `helper_evals[c] = h_{k,c}(x)` |
+| `Z_k(X)` — accumulator | `prfLookupAccumComs[k]` | `accum_eval = Z_k(x)`, `accum_next_eval = Z_k(xω)` |
 
-The "compressed" input and table expressions are evaluated via the VK
-`GateExpr` trees and then Horner-folded with the challenge θ:
+Flat eval offset for lookup k: `o_k = Σ_{i<k}(nc_i + 3)`.
+Evaluations at offset `o_k`:
+- `prfLogupEvals[o_k]` = `mult_eval`
+- `prfLogupEvals[o_k + 1 .. o_k + nc_k]` = `helper_evals[0..nc_k−1]`
+- `prfLogupEvals[o_k + nc_k + 1]` = `accum_eval`
+- `prfLogupEvals[o_k + nc_k + 2]` = `accum_next_eval`
+
+### 4.2 Constraint expressions
+
+Let `o_k` and `nc_k` be as above.  `vkLookupInputExprs[k][c][j]` is the list
+of width expressions for parallel input j of chunk c; θ-compress each:
 
 ```
-inputArgs = θ^{m-1}·e_0(x) + θ^{m-2}·e_1(x) + … + e_{m-1}(x)
+f̄_{c,j} = foldl (\a e -> a·θ + evalE e) 0 (vkLookupInputExprs[k][c][j])
+fsBeta_c = [ f̄_{c,j} + β  |  j ← 0..J_c-1 ]
 ```
 
-The 5 constraint expressions are:
+The `nc_k + 2` constraint expressions in Horner-fold order:
 
 ```
-e0 = l₀ · (1 − Z_k(x))                                        -- starts at 1
-e1 = l_last · (Z_k(x)² − Z_k(x))                              -- ends at 0 or 1
-e2 = activeRows · (Z_k(ωx)·(A'_k + β)·(S'_k + γ) − Z_k(x)·(inputArgs + β)·(tableArgs + γ))
-e3 = l₀ · (A'_k(x) − S'_k(x))                                 -- A' and S' start equal
-e4 = activeRows · (A'_k(x) − S'_k(x)) · (A'_k(x) − A'_k(ω⁻¹·x))
+-- (1) Boundary (1 expression):
+e_boundary = (l₀ + l_last) · accumEval
+
+-- (2) Helper for chunk c = 0..nc_k-1 (nc_k expressions):
+--     Certifies h_{k,c}(x) = Σ_j 1/(f̄_{c,j}+β) as a polynomial identity.
+product_c  = Π_j fsBeta_c[j]
+sumParts_c = Σ_j Π_{m≠j} fsBeta_c[m]       -- partial products (no field inv. needed)
+e_helper_c = helperEvals[c] · product_c − sumParts_c
+
+-- (3) Accumulator (1 expression):
+t̄    = foldl (\a e -> a·θ + evalE e) 0 (vkLookupTableExprs[k])
+sel  = evalE (vkLookupSelectorExprs[k])
+sumH = Σ_c helperEvals[c]
+e_accum = activeRows · ((accumNextEval − accumEval − sel·sumH) · (t̄+β) + multEval)
 ```
+
+Total constraint expressions per lookup: `nc_k + 2`.
+Total across all nl lookups: `nL = Σ_k (nc_k + 2)`.
+
+Only challenge `β` appears in the lookup constraints.  `γ` is used exclusively
+in the permutation argument (§3).
 
 ---
 
@@ -205,17 +241,39 @@ hEvalSum = Σᵢ yⁱ · constraintᵢ(x)    (highest power = index 0)
 Then:
 
 ```
-h(x) = hEvalSum / (x^n − 1)
+hEval = hEvalSum / (x^n − 1)
 ```
 
 The field inversion of `x^n - 1` is safe because x is a Fiat-Shamir
 challenge outside the evaluation domain, so `x^n ≠ 1` with overwhelming
 probability.
 
-The verifier's h(x) is fed into `assembleRotationSets` as the claimed
-evaluation for the H rotation set slot (slot kind 6).  The KZG pairing
-check then enforces that the committed h polynomial (split across hComs)
-is consistent with this value.
+### Linearization commitment evaluation
+
+midnight-zk does not commit to `h(X)` directly.  The prover commits to the
+**linearization polynomial** `L(X) = (1−x^n)·h(X) + Σ_k c_k·S_k(X)`, where
+`S_k` are the simple-selector fixed columns and `c_k` are scalars derived during
+the gate Horner fold (see VERIFIER_SPEC.md §7.2).  At x:
+
+```
+linComEval = L(x) = −(x^n − 1) · hEval + Σ_k c_k
+```
+
+The `c_k` are computed in a joint gate fold that maintains per-selector-column
+Horner accumulators in parallel with the main `hGate` accumulator:
+
+```
+c_k = y^{nP + nL + nT} · selFold_k
+```
+
+where `selFold_k` is the partial Horner sum over gates gated by selector column k,
+and `nP + nL + nT` is the number of perm + lookup + trash constraint expressions
+that follow the gate fold (each multiplying gate contributions by y^{nP+nL+nT} more).
+
+`linComEval` (not `hEval`) is used as the claimed evaluation for the H slot in
+`assembleRotationSets`.  The KZG pairing check enforces that the committed `L`
+polynomial (built from h-piece and selector-column G1 points) actually opens to
+`linComEval`, binding both h and the selector columns to the verifier's calculation.
 
 ---
 
@@ -251,7 +309,7 @@ can be burned in as literals at compile time.
 
 - `advEvals`, `fixEvals`, `instEvalComm` — directly from proof fields
 - `ppEval`, `sigmaEval` — from `prfPermProdEvals` / `prfPermSigmaEvals`
-- `luE` — from `prfLookupEvals`
+- `multEval`, `helperEvals`, `accumEval`, `accumNextEval` — from `prfLogupEvals`
 - `trashE` — from `prfTrashEvals`
 - All `evalGate` calls (gate / lookup / trash expression evaluation)
 

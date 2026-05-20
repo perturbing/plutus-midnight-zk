@@ -1,5 +1,5 @@
 {
-  "blinding_factors": 5,
+  "blinding_factors": 7,
   "cs_degree": 5,
   "fixed_commitments": [
     "95b3047638c1642a745e94d5f96a15ffc0a49749f239ae6e482650af6c0a990b3d498c5142f7016ca4b9d3ce311a236b",
@@ -22,7 +22,7 @@
   ],
   "k": 12,
   "num_advice_columns": 5,
-  "num_lookups": 4,
+  "num_lookups": 1,
   "num_perm_columns": 8,
   "omega": "0663d3a511da06e296bf8f377b34d10a5f24f8e0cf8a3efcf404f7a0110a4c56",
   "permutation_commitments": [
@@ -36,5 +36,24 @@
     "85dc8f2b72ae777521b247a2d2a64b6d83e3ec2b89bb0e9da7f3fdf1774a48f682ac609ef8e90b82dad0d9f71866f927"
   ],
   "s_g2": "b16010f1b3d33aa5f3f608c385400979ed36dc3fab53d3626f519c74d7e1ebef62c9ad35796404ce2fc3ebb42167b5a1050ac27c3527072b81af0fa9a683e226da79275f2985c9e89a0db969b76e0b6be94fee874c48586737ad5588cf1e1041",
-  "transcript_repr": "ffecaa53343e17ff4ab4879c8ce45db65dce0f00c94b1e1b5ea40be530fe5000"
+  "simple_selector_mask": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false
+  ],
+  "transcript_repr": "a48611519f5b92a0e9ed9c597b3933065f2c32f8ff29dcca37d82ba3141af35a"
 }

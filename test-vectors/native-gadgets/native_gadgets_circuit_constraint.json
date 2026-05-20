@@ -270,27 +270,39 @@
       }
     ]
   ],
+  "gate_sel_cols": [
+    13,
+    14,
+    15,
+    15,
+    15
+  ],
   "lookup_input_exprs": [
     [
       [
-        {
-          "op": "Fixed",
-          "query_index": 10
-        }
-      ],
-      [
-        {
-          "op": "Fixed",
-          "query_index": 16
-        },
-        {
-          "op": "Advice",
-          "query_index": 1
-        },
-        {
-          "op": "Product"
-        }
+        [
+          [
+            {
+              "op": "Fixed",
+              "query_index": 10
+            }
+          ],
+          [
+            {
+              "op": "Advice",
+              "query_index": 1
+            }
+          ]
+        ]
       ]
+    ]
+  ],
+  "lookup_selector_exprs": [
+    [
+      {
+        "op": "Fixed",
+        "query_index": 16
+      }
     ]
   ],
   "lookup_table_exprs": [

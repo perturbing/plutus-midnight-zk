@@ -21,7 +21,7 @@ use midnight_circuits::{
 };
 use midnight_curves::{Fr as JubjubScalar, JubjubAffine, JubjubExtended as Jubjub, JubjubSubgroup};
 use midnight_proofs::{circuit::{Layouter, Value}, plonk::Error};
-use midnight_zk_stdlib::{utils::plonk_api::filecoin_srs, Relation, ZkStdLib, ZkStdLibArch};
+use midnight_zk_stdlib::{utils::plonk_api::srs_for_test, Relation, ZkStdLib, ZkStdLibArch};
 use rand::{RngCore, SeedableRng, rngs::OsRng};
 use rand_chacha::ChaCha8Rng;
 use crate::circuit_params::write_json_all_artifacts;
@@ -158,10 +158,10 @@ impl Relation for SchnorrExample {
 
 pub fn run(base_dir: &str) {
     const K: u32 = 11;
-    let srs = filecoin_srs(K);
     let mut rng = ChaCha8Rng::seed_from_u64(0xf001ba11);
 
     let relation = SchnorrExample;
+    let srs = srs_for_test(&relation, Some(K));
     let vk = midnight_zk_stdlib::setup_vk(&srs, &relation);
     let pk_circuit = midnight_zk_stdlib::setup_pk(&relation, &vk);
 

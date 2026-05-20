@@ -33,8 +33,8 @@ runBench label dir name = do
     instV <- decodeOrDie (base ++ "_plutus_instance.json")
 
     let vk = parsePlutusVK vkV ccV
-        specs = parseRotationSets rsV
         proof = parsePlutusProof proofV
+        specs = parseRotationSets rsV proof
         pubInputs = parseInstance instV
 
     let prog = verifyScript vk specs proof pubInputs

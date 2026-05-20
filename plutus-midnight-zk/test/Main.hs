@@ -29,7 +29,7 @@ runTest label dir name = do
 
     let vk = parsePlutusVK vkV ccV
         proof = parsePlutusProof proofV
-        specs = parseRotationSets rsV
+        specs = parseRotationSets rsV proof
         pubInputs = parseInstance instV
 
     resultE <- try (evaluate (verify vk specs proof pubInputs)) :: IO (Either SomeException Bool)

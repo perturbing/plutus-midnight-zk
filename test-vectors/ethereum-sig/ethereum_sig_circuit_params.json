@@ -1,12 +1,21 @@
 {
+  "lookup_num_chunks_per_lookup": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
   "num_advice_columns": 10,
   "num_advice_queries": 29,
   "num_blinding_commitments": 0,
-  "num_fixed_queries": 44,
-  "num_lookups": 15,
+  "num_fixed_queries": 28,
+  "num_lookups": 6,
   "num_permutation_commitments": 13,
   "num_permutation_product_evals": 14,
   "num_quotient_commitments": 4,
-  "num_rotation_sets": 6,
-  "permutation_chunk_size": 3
+  "num_rotation_sets": 1,
+  "permutation_chunk_size": 3,
+  "total_lookup_helpers": 6
 }

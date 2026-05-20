@@ -1,5 +1,5 @@
 {
-  "blinding_factors": 6,
+  "blinding_factors": 8,
   "cs_degree": 5,
   "fixed_commitments": [
     "b6742a8c4f331d1be5bc8622ba92b271c798f706f7ed359adb5f2ac650537c84623ab7834d56f8e1d36c8442aea29c13",
@@ -38,5 +38,26 @@
     "9983cb9722d7ec0aff9293143c04ce2ed7d405d3ed231b0e95780fcdb0fe1b4fbca6d19c25ed1b32ff24f84d89c3f036"
   ],
   "s_g2": "b16010f1b3d33aa5f3f608c385400979ed36dc3fab53d3626f519c74d7e1ebef62c9ad35796404ce2fc3ebb42167b5a1050ac27c3527072b81af0fa9a683e226da79275f2985c9e89a0db969b76e0b6be94fee874c48586737ad5588cf1e1041",
-  "transcript_repr": "19e6dae26fccc6e73847cde78d630d5401c6555cd17e052d20ceef358396b351"
+  "simple_selector_mask": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    true,
+    false
+  ],
+  "transcript_repr": "940464e7f9a8f3fc83ecfd67f7cb01edd626e8183a72c39146523a0dace5c24c"
 }

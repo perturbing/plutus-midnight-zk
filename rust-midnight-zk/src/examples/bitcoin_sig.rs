@@ -28,7 +28,7 @@ use midnight_circuits::{
 };
 use midnight_curves::k256::{Fp as K256Base, Fq as K256Scalar, K256};
 use midnight_proofs::{circuit::{Layouter, Value}, plonk::Error};
-use midnight_zk_stdlib::{utils::plonk_api::filecoin_srs, Relation, ZkStdLib, ZkStdLibArch};
+use midnight_zk_stdlib::{utils::plonk_api::srs_for_test, Relation, ZkStdLib, ZkStdLibArch};
 use rand::rngs::OsRng;
 use sha2::Digest;
 use crate::circuit_params::write_json_all_artifacts;
@@ -72,8 +72,8 @@ impl Relation for BitcoinSigCircuit {
         instance: Value<Self::Instance>,
         witness: Value<Self::Witness>,
     ) -> Result<(), Error> {
-        let secp256k1_curve = std_lib.secp256k1_curve();
-        let secp256k1_scalar = std_lib.secp256k1_scalar();
+        let secp256k1_curve = std_lib.secp256k1();
+        let secp256k1_scalar = secp256k1_curve.scalar_field_chip();
         let secp256k1_base = secp256k1_curve.base_field_chip();
 
         let pk = secp256k1_curve.assign_as_public_input(layouter, instance.map(|(pk, _)| pk))?;
@@ -174,9 +174,8 @@ pub fn run(base_dir: &str) {
     ];
 
     const K: u32 = 15;
-    let srs = filecoin_srs(K);
-
     let relation = BitcoinSigCircuit;
+    let srs = srs_for_test(&relation, Some(K));
     let vk = midnight_zk_stdlib::setup_vk(&srs, &relation);
     let pk = midnight_zk_stdlib::setup_pk(&relation, &vk);
 

@@ -24,7 +24,7 @@ use midnight_circuits::{
     map::cpu::MapMt,
 };
 use midnight_proofs::{circuit::{Layouter, Value}, plonk::Error};
-use midnight_zk_stdlib::{utils::plonk_api::filecoin_srs, Relation, ZkStdLib, ZkStdLibArch};
+use midnight_zk_stdlib::{utils::plonk_api::srs_for_test, Relation, ZkStdLib, ZkStdLibArch};
 use rand::rngs::OsRng;
 use crate::circuit_params::write_json_all_artifacts;
 
@@ -90,9 +90,8 @@ impl Relation for MembershipExample {
 
 pub fn run(base_dir: &str) {
     const K: u32 = 13;
-    let srs = filecoin_srs(K);
-
     let relation = MembershipExample;
+    let srs = srs_for_test(&relation, Some(K));
     let vk = midnight_zk_stdlib::setup_vk(&srs, &relation);
     let pk = midnight_zk_stdlib::setup_pk(&relation, &vk);
 

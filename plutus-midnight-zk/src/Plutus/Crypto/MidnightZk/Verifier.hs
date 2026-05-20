@@ -64,26 +64,38 @@ For each 'RotationSetSpec', the assembler:
 The result is a '[RotationSet]' with @rsScaledComs@ and @rsQEvalsAtPts@ ready
 for the generic 'verifyGwc' core.
 
-= h-piece Special Case
+= Linearization Commitment Special Case
 
-h(X) = Σⱼ (X^{N-1})^j · hⱼ(X), so at evaluation point x:
+The H slot in the rotation sets represents the __linearization commitment__
+@lin_com@ (not the raw h polynomial). The prover commits to:
 
-  h(x) = Σⱼ (x^{N-1})^j · hⱼ(x)
+  L(X) = (1−x^n)·h(X) + Σₖ cₖ·Sₖ(X)
 
-The evaluation h(x) is derived by the verifier from the gate constraint sum:
+where h(X) = Σⱼ (X^{N-1})^ʲ·hⱼ(X) is the vanishing quotient, Sₖ are the
+simple (multiplicative) selector fixed columns, and
 
-  h(x) = (Σᵢ yⁱ · constraintᵢ(x)) / (x^n − 1)
+  cₖ = y^{P+L+T} · Σ_{j: gate j uses Sₖ} gateⱼ(x) · y^{G−1−j}
 
-This is the PLONK step-8 reconstruction: since the verifier already evaluates
-all advice/fixed/permutation/lookup polynomials at x, it can compute the
-numerator for free, and one field inversion gives h(x).  No prover hint is
-needed; the KZG opening for the combined h commitment enforces consistency.
+(y-weighted sum of gate evaluations for gates gated by selector column k,
+scaled by the number of perm/logup/trash constraints P+L+T that follow).
 
-For the commitment MSM, each h-piece j gets the scalar
+At evaluation point x (with Sₖ(x) substituted by 1):
 
-  x₁^{hPos} · hSplit^j,  where hSplit = x^{N-1}, hPos = 1 + nl + nf + np
+  L(x) = −(x^n−1)·h(x) + Σₖ cₖ  =  (zero − xnMinusOne)·hEval + selGatedSum
 
-so h(X) occupies one logical slot in the x₁-ordering of set 0.
+This is the value returned as @linComEval@ by 'computeHEval' and used for
+the H slot at RotCur in 'assembleRotationSets'.
+
+For the commitment MSM, each h-piece l gets the scalar
+
+  x₁^{hPos} · (1−x^n) · hSplit^l
+
+and each simple selector column k additionally contributes
+
+  x₁^{hPos} · cₖ · [Sₖ]₁
+
+so @lin_com@ occupies one logical slot (with |hPieces|+|selCols| G1 points)
+in the x₁-ordering of set 0.
 -}
 module Plutus.Crypto.MidnightZk.Verifier (
     -- * Main entry point
@@ -142,7 +154,7 @@ import PlutusTx.Builtins (
     integerToByteString,
  )
 import PlutusTx.Foldable (foldl, sum)
-import PlutusTx.List (concatMap, drop, head, length, map, unzip, zip, zipWith, (!!))
+import PlutusTx.List (concatMap, drop, head, length, map, reverse, tail, unzip, zip, zipWith, (!!))
 import PlutusTx.Numeric (
     AdditiveGroup (..),
     AdditiveMonoid (..),
@@ -152,7 +164,7 @@ import PlutusTx.Numeric (
     MultiplicativeSemigroup (..),
  )
 import PlutusTx.Prelude (
-    Bool,
+    Bool (..),
     Eq (..),
     Integer,
     enumFromTo,
@@ -196,86 +208,86 @@ verify vk specs prf pubInputs =
 
         -- ── Step 1: Build transcript and derive all challenges ────────────────
         --
-        -- Absorb order (must exactly match the prover's transcript):
+        -- Absorb order (must exactly match the v7 LogUp prover's transcript):
         --
         --   VK transcript repr       → absorb
         --   G1 identity (instance)   → absorb (placeholder for instance com)
         --   public inputs            → absorb length, then each element
-        --   advice commitments       → absorb; squeeze θ  (lookup compression challenge)
-        --   lookup input+table coms  → absorb interleaved; squeeze β, γ  (perm/lookup challenges)
-        --   perm+lookup prod coms    → absorb; squeeze trash; absorb trash coms
-        --   random poly commitment   → absorb; squeeze y  (gate Horner-folding challenge)
+        --   advice commitments       → absorb; squeeze θ  (lookup compression)
+        --   multiplicity coms        → absorb; squeeze β, γ  (logup/perm challenges)
+        --   perm z-product coms      → absorb
+        --   per-lookup helpers+accum → absorb; squeeze trashChal
+        --   trash commitments        → absorb; squeeze y  (gate Horner-folding)
         --   h-piece commitments      → absorb; squeeze x  (evaluation point)
         --   all evaluations          → absorb; squeeze x₁ (within-set combiner)
         --                                      squeeze x₂ (across-set combiner)
         --   fCom                     → absorb; squeeze x₃ (opening point for f)
         --   qEvalsOnX3               → absorb; squeeze x₄ (fold combiner)
-        --
-        -- All challenges are used: θ/β/γ/trash/y in computeHEval (gate constraint check);
-        -- x/x₁/x₂/x₃/x₄ in assembleRotationSets and verifyGwc.
 
         -- Absorb VK transcript repr (circuit identity)
         td0 = initTranscript (vkTranscriptRepr vk)
 
         -- Absorb G1 identity: placeholder for the instance polynomial commitment.
-        -- The instance commitment is the G1 zero point (public inputs are not
-        -- blinded). It must still be absorbed to match the prover.
         td1 = td0 <> bls12_381_G1_compressed_zero
 
         -- Absorb public inputs: length (LE 32-byte), then each element (LE 32-byte).
         td2 = absorb td1 (integerToByteString LittleEndian 32 (length pubInputs))
         td3 = foldl (\td n -> absorb td (integerToByteString LittleEndian 32 n)) td2 pubInputs
 
-        -- Absorb advice commitments; squeeze θ (used for lookup compression).
+        -- Absorb advice commitments; squeeze θ (lookup compression challenge).
         td4 = foldl (<>) td3 (prfAdviceComs prf)
         (theta, td4s) = squeeze td4
 
-        -- Absorb lookup permuted-input and permuted-table commitments interleaved
-        -- as [A'₀, S'₀, A'₁, S'₁, …]; squeeze β then γ.
-        -- zipWith (<>) pairs bytes as A'ᵢ<>S'ᵢ; foldl (<>) appends — same total
-        -- byte sequence as interleaving because ByteString (<>) is associative.
-        td5 = foldl (<>) td4s (zipWith (<>) (prfLookupInputComs prf) (prfLookupTableComs prf))
-        (beta, td5s) = squeeze td5
-        (gamma, td5ss) = squeeze td5s
+        -- Absorb multiplicity commitments (one per lookup); squeeze β, γ.
+        td5 = foldl (<>) td4s (prfLookupMultComs prf)
+        (beta, td5b) = squeeze td5
+        (gamma, td5g) = squeeze td5b
 
-        -- Absorb perm product commitments then lookup product commitments; squeeze
-        -- the trash_challenge. Then absorb any extra blinding (trash)
-        -- commitments (when blinding_factors > 5).
-        -- NOTE: squeeze happens BEFORE trash coms, matching the Rust prover order.
-        td6 = foldl (<>) td5ss (prfPermProdComs prf)
-        td7 = foldl (<>) td6 (prfLookupProdComs prf)
-        (trashChal, td7s) = squeeze td7 -- trash_challenge (before trash coms)
-        td7t = foldl (<>) td7s (prfTrashComs prf) -- absorb trash coms after squeeze
+        -- Absorb perm z-product commitments (no squeeze here).
+        td6 = foldl (<>) td5g (prfPermProdComs prf)
 
-        -- Absorb random polynomial commitment; squeeze y (used for gate constraint check).
-        td8r = td7t <> prfRandomCom prf
-        (y, td8s) = squeeze td8r
+        -- Absorb per-lookup LogUp commitments: for each lookup k, absorb helpers then accum.
+        -- Then squeeze trash_challenge (once, after ALL lookups).
+        td7 = foldl2
+                (\td helpers accum -> foldl (<>) td helpers <> accum)
+                td6
+                (prfLookupHelperComs prf)
+                (prfLookupAccumComs prf)
+        (trashChal, td7s) = squeeze td7
+
+        -- Absorb trash commitments; squeeze y (gate constraint Horner-folding challenge).
+        td7t = foldl (<>) td7s (prfTrashComs prf)
+        (y, td8s) = squeeze td7t
 
         -- Absorb h-piece commitments; squeeze x (the shared evaluation point).
         td9 = foldl (<>) td8s (prfHComs prf)
         (x, td9s) = squeeze td9
 
+        -- Absorb committed instance eval (always 0: committed_pi = G1Affine::identity()).
+        -- midnight-proofs writes this value to the transcript immediately after squeezing x
+        -- and before the advice evals.  We absorb the constant 0 here to stay in sync.
+        -- (The Instance slot in the rotation sets uses eval_idxs pointing into allEvals
+        -- which starts at adviceEvals[0], so this eval is NOT in allEvals.)
+        td9inst = absorb td9s (integerToByteString LittleEndian 32 0)
+
         -- Absorb all polynomial evaluations in canonical order:
-        --   instEval, adviceEvals, fixedEvals, randomEval,
-        --   permSigmaEvals, permProdEvals, lookupEvals, trashEvals
+        --   adviceEvals, fixedEvals (non-simple-selectors only), permSigmaEvals,
+        --   permProdEvals, logupEvals, trashEvals, dummyEvals
         --
-        -- mkScalar validates each integer is in [0, q): a proof containing an
-        -- out-of-range scalar is rejected here rather than silently mis-hashed.
+        -- Simple-selector fixed evals are NOT absorbed (prover omits them; verifier
+        -- substitutes 1).  dummyEvals are fewer-point-sets padding evals.
+        -- Each list is folded directly — no allEvals concatenation — to avoid
+        -- building an O(total_evals) intermediate list in memory.
+        absorb32 td n = absorb td (integerToByteString LittleEndian 32 n)
         chkS = unScalar . mkScalar
-        allEvals =
-            [0] -- instance_poly_eval hardcoded 0 (col 0 is the zero polynomial)
-                <> map chkS (prfAdviceEvals prf)
-                <> map chkS (prfFixedEvals prf)
-                <> [chkS (prfRandomEval prf)]
-                <> map chkS (prfPermSigmaEvals prf)
-                <> map chkS (prfPermProdEvals prf)
-                <> map chkS (prfLookupEvals prf)
-                <> map chkS (prfTrashEvals prf)
-        td10 =
-            foldl
-                (\td n -> absorb td (integerToByteString LittleEndian 32 n))
-                td9s
-                allEvals
+        td10a = foldl (\td n -> absorb32 td (chkS n)) td9inst (prfAdviceEvals prf)
+        td10b = foldl2 (\td isSel n -> if isSel then td else absorb32 td (chkS n))
+                    td10a (vkSimpleSelectorMask vk) (prfFixedEvals prf)
+        td10c = foldl (\td n -> absorb32 td (chkS n)) td10b (prfPermSigmaEvals prf)
+        td10d = foldl (\td n -> absorb32 td (chkS n)) td10c (prfPermProdEvals prf)
+        td10e = foldl (\td n -> absorb32 td (chkS n)) td10d (prfLogupEvals prf)
+        td10f = foldl (\td n -> absorb32 td (chkS n)) td10e (prfTrashEvals prf)
+        td10  = foldl (\td n -> absorb32 td (chkS n)) td10f (prfDummyEvals prf)
 
         -- Squeeze x₁ (within-set combiner) then x₂ (across-set combiner).
         -- x₁ ≠ x₂ is guaranteed by state replacement.
@@ -306,7 +318,6 @@ verify vk specs prf pubInputs =
 
         omgInv = ccOmegaInv cfg
         xNext = x * omg
-        xPrev = x * omgInv
         omgLast = ccOmegaLast cfg
         xLast = x * omgLast
 
@@ -326,11 +337,9 @@ verify vk specs prf pubInputs =
         -- Computing it once and deriving xn = hSplit * x saves one expModInteger vs scale n x.
         hSplit = scale (n - 1) x
         xnMinusOne = hSplit * x - one
-        hEval = computeHEval vk prf pubInputs x xnMinusOne y theta beta gamma trashChal
+        (hEval, linComEval, selColData) = computeHEval vk prf pubInputs x xnMinusOne y theta beta gamma trashChal
 
-        rotSets = assembleRotationSets vk prf specs x x1 xNext xPrev xLast hEval hSplit
-
-        -- ── Steps 6–10: Generic GWC verifier ─────────────────────────────────
+        rotSets = assembleRotationSets vk prf specs x x1 xNext xLast linComEval hSplit xnMinusOne selColData
 
         fCom' = bls12_381_G1_uncompress (prfFCom prf)
         qE = map mkScalar (prfQEvalsOnX3 prf)
@@ -352,17 +361,32 @@ No stack threading — invalid programs are structurally impossible.
 Scalars in 'GEConst' and 'GEScale' are pre-decoded at parse time and lifted
 into the Plutus script — zero byte-scanning overhead at on-chain evaluation.
 -}
+-- | List index without a negative-index bounds check.
+-- PlutusTx's built-in '!!' checks n < 0 at every recursion step, costing
+-- ~200 ExMem per hop. All indices here are non-negative by construction.
+{-# INLINEABLE fastIndex #-}
+fastIndex :: [a] -> Integer -> a
+fastIndex []     _ = error ()
+fastIndex (x:xs) n = if n == 0 then x else fastIndex xs (n - 1)
+
+-- | Strict left fold over two lists in parallel, without building a zip list.
+{-# INLINEABLE foldl2 #-}
+foldl2 :: (b -> a -> c -> b) -> b -> [a] -> [c] -> b
+foldl2 _ acc []     _      = acc
+foldl2 _ acc _      []     = acc
+foldl2 f acc (x:xs) (y:ys) = foldl2 f (f acc x y) xs ys
+
 {-# INLINEABLE evalGate #-}
 evalGate :: GateExpr -> [Scalar] -> [Scalar] -> [Scalar] -> Scalar
 evalGate expr adv fix inst = go expr
   where
-    go (GEConst s) = s
-    go (GEAdv qi) = adv !! qi
-    go (GEFix qi) = fix !! qi
-    go (GEInst qi) = inst !! qi
-    go (GENeg e) = zero - go e
-    go (GEAdd a b) = go a + go b
-    go (GEMul a b) = go a * go b
+    go (GEConst s)   = s
+    go (GEAdv qi)    = fastIndex adv qi
+    go (GEFix qi)    = fastIndex fix qi
+    go (GEInst qi)   = fastIndex inst qi
+    go (GENeg e)     = zero - go e
+    go (GEAdd a b)   = go a + go b
+    go (GEMul a b)   = go a * go b
     go (GEScale e s) = go e * s
 
 {- | Derive h(x) from the gate constraint sum.
@@ -386,17 +410,30 @@ computeHEval ::
     Scalar -> -- beta: permutation/lookup challenge
     Scalar -> -- gamma: permutation/lookup challenge
     Scalar -> -- trashChal: trash argument challenge
-    Scalar
+    (Scalar, Scalar, [(Integer, Scalar)])
+    -- ^ (hEval, linComEval, selColData)
 computeHEval vk prf pubInputs x xnMinusOne y theta beta gamma trashChal =
     let
-        cfg = vkConfig vk
-        blinding = ccBlinding cfg
-        omega = ccOmega cfg
-        chunkSize = ccPermChunkSize cfg
-        numPermCols = ccNumPermCols cfg
-        numChunks = length (prfPermProdComs prf)
-        numLookups = ccNumLookups cfg
-        delta = mkScalar bls12_381_scalar_delta
+        cfg          = vkConfig vk
+        blinding     = ccBlinding cfg
+        omega        = ccOmega cfg
+        chunkSize    = ccPermChunkSize cfg
+        numPermCols  = ccNumPermCols cfg
+        numChunks    = length (prfPermProdComs prf)
+        numLookups   = ccNumLookups cfg
+        delta        = mkScalar bls12_381_scalar_delta
+
+        -- Bind VK/proof fields used in inner loops to avoid repeated field extraction
+        permColTypes  = vkPermColTypes vk
+        liExprs       = vkLookupInputExprs vk
+        ltExprs       = vkLookupTableExprs vk
+        lsExprs       = vkLookupSelectorExprs vk
+        trashSels     = vkTrashSelectors vk
+        trashCons     = vkTrashConstraintExprs vk
+        trashEvs      = prfTrashEvals prf
+        logupEvs      = prfLogupEvals prf
+        permProdRaw   = prfPermProdEvals prf
+        sigmaRaw      = prfPermSigmaEvals prf
 
         -- Polynomial evaluations from the proof, lifted to Scalar
         advEvals = map mkScalar (prfAdviceEvals prf)
@@ -445,7 +482,7 @@ computeHEval vk prf pubInputs x xnMinusOne y theta beta gamma trashChal =
         lBlindInvs = drop 1 restInvs0
         lBlind = sum (zipWith lagrangeFromInv lBlindOmgs lBlindInvs)
         lLast = lagrangeFromInv lLastOmg lLastInv
-        hInv = lBlindInvs !! blinding
+        hInv = fastIndex lBlindInvs blinding
 
         activeRows = one - lLast - lBlind
 
@@ -453,17 +490,17 @@ computeHEval vk prf pubInputs x xnMinusOne y theta beta gamma trashChal =
 
         -- Get proof evaluation for a permutation column (advice/fixed/instance)
         getPermColEval globalIdx =
-            let (ct, ei) = vkPermColTypes vk !! globalIdx
+            let (ct, ei) = fastIndex permColTypes globalIdx
              in if ct == 0
-                    then advEvals !! ei
+                    then fastIndex advEvals ei
                     else
                         if ct == 1
-                            then fixEvals !! ei
-                            else instEvals !! ei -- ct == 2
-        permProdEvals = map mkScalar (prfPermProdEvals prf)
-        sigmaEvals = map mkScalar (prfPermSigmaEvals prf)
-        ppEval j fld = permProdEvals !! (3 * j + fld)
-        sigmaEval i = sigmaEvals !! i
+                            then fastIndex fixEvals ei
+                            else fastIndex instEvals ei -- ct == 2
+        permProdEvals = map mkScalar permProdRaw
+        sigmaEvals = map mkScalar sigmaRaw
+        ppEval j fld = fastIndex permProdEvals (3 * j + fld)
+        sigmaEval i = fastIndex sigmaEvals i
 
         -- Number of columns in chunk j
         chunkColCount j =
@@ -497,12 +534,18 @@ computeHEval vk prf pubInputs x xnMinusOne y theta beta gamma trashChal =
              in (activeRows * (leftProd - rightProd), nextDelta)
 
         -- ── Horner-fold all expressions with y ────────────────────────────────
-        -- Each section folds directly into the accumulator without building
-        -- an intermediate list — eliminates O(n) cons-cell allocations per section
-        -- and the O(numChunks²) list-append cost in the perm chunk loop.
+        selColList = vkSimpleSelColList vk
 
-        -- Gate: fold evalE directly over vkGatePolys, no intermediate list
-        hGate = foldl (\acc e -> acc * y + evalE e) zero (vkGatePolys vk)
+        -- Evaluate all gate expressions on-chain; Horner-fold for hGate.
+        -- Also build gvWithCols (one pass) for the per-column selFold Horner folds.
+        -- selFold_k = foldl (\acc (gv,col) -> acc*y + if col==sc then gv else 0) 0 gvWithCols
+        --           = Σ_{j: col_j=k} gv_j · y^{G−1−j}   (same y-weighting as hGate)
+        -- This avoids building intermediate yPowsDesc, gateYPows, and S separate zipWith lists.
+        gateColIdxs = vkGateSelCols vk
+        gateVals = map evalE (vkGatePolys vk)
+        gvWithCols = zip gateVals gateColIdxs
+        hGate = foldl (\acc gv -> acc * y + gv) zero gateVals
+        finalSelFolds = map (\sc -> foldl (\acc (gv, col) -> acc * y + if col == sc then gv else zero) zero gvWithCols) selColList
 
         -- Perm: two fixed exprs, then numChunks-1 continuation exprs, then numChunks chunk exprs
         hPerm =
@@ -510,70 +553,137 @@ computeHEval vk prf pubInputs x xnMinusOne y theta beta gamma trashChal =
                 hP1 = hP0 * y + lLast * (let zl = ppEval (numChunks - 1) 0 in zl * zl - zl)
                 hP2 = foldl (\acc j -> acc * y + l0 * (ppEval (j + 1) 0 - ppEval j 2)) hP1 (enumFromTo 0 (numChunks - 2))
                 (result, _) = foldl (\(acc, cd) j -> let (c, cd') = permChunkConstraint j cd in (acc * y + c, cd')) (hP2, one) (enumFromTo 0 (numChunks - 1))
-             in result
+            in result
 
-        -- Lookup: each lookup's 5 exprs folded directly, no concatMap intermediate
-        hLookup = foldl (lookupHornerForK vk prf l0 lLast activeRows theta beta gamma evalE y) hPerm (enumFromTo 0 (numLookups - 1))
+        -- LogUp: each lookup's (nc+2) constraints folded, threading the eval offset
+        (hLookup, _) = foldl (logupHornerForK liExprs ltExprs lsExprs logupEvs l0 lLast activeRows theta beta y evalE) (hPerm, 0) (enumFromTo 0 (numLookups - 1))
 
         -- Trash: inline each trash expr, no intermediate map list
-        numTrash = length (vkTrashSelectors vk)
+        numTrash = length trashSels
         hEvalSum =
             foldl
                 ( \acc t ->
-                    let trashE = mkScalar (prfTrashEvals prf !! t)
-                        selE = evalE (vkTrashSelectors vk !! t)
-                        consExprs = vkTrashConstraintExprs vk !! t
+                    let trashE = mkScalar (fastIndex trashEvs t)
+                        selE = evalE (fastIndex trashSels t)
+                        consExprs = fastIndex trashCons t
                         compressed = foldl (\a e -> a * trashChal + evalE e) zero consExprs
                      in acc * y + (compressed - (one - selE) * trashE)
                 )
                 hLookup
                 (enumFromTo 0 (numTrash - 1))
+        hEval = hEvalSum * hInv
+
+        -- ── Linearization commitment evaluation ───────────────────────────────
+        -- The lin_com polynomial is L(X) = (1-x^n)*h(X) + Σ_k c_k * S_k(X).
+        -- At x, with S_k(x) = 1 (simple selector substitution):
+        --   L(x) = -(x^n-1)*h(x) + Σ_k c_k
+        --
+        -- c_k = y^{nRemaining} * selFold_k, where selFold_k is the partial Horner
+        -- sum of gate evaluations for gates gated by simple selector column k,
+        -- and nRemaining = P + L + T is the count of perm+logup+trash expressions
+        -- that are folded after the gate fold (each multiplying gate contributions
+        -- by y^{nRemaining} more).
+        --
+        -- nP = 2*numChunks+1: perm constraint count
+        -- nL = Σ_k (nc_k + 2): logup constraint count (boundary + nc helpers + accum per lookup)
+        -- nT = numTrash: trash constraint count
+        nP = 2 * numChunks + 1
+        nL = foldl (\acc k -> acc + length (fastIndex liExprs k) + 2) 0 (enumFromTo 0 (numLookups - 1))
+        nT = numTrash
+        nRemaining = nP + nL + nT
+        yNRem = scale nRemaining y -- y^{nRemaining}
+        -- c_k = selFold_k * y^{nRemaining}
+        selColData = zipWith (\sc sf -> (sc, sf * yNRem)) selColList finalSelFolds
+        selGatedSum = sum (map snd selColData)
+        linComEval = (zero - xnMinusOne) * hEval + selGatedSum
      in
-        -- h(x) = hEvalSum / (x^n − 1)
-        -- x is a random challenge outside the domain, so x^n ≠ 1 and the inversion is safe.
+        (hEval, linComEval, selColData)
 
-        hEvalSum * hInv
+{- | Horner-fold the LogUp constraints for lookup k.
 
-{- | Horner-fold the 5 lookup expressions for lookup k into accumulator acc.
-Avoids building an intermediate list: returns acc*y^5 + e0*y^4 + ... + e4.
+For a lookup with nc_k chunks, yields nc_k + 2 constraints (in this order):
+
+  * Boundary:    @(l₀ + l_last) · Z(x)@
+  * Helper×nc_k: @h_c · Π_j(f_j+β) − Σ_j Π_{k≠j}(f_k+β)@ for each chunk c
+  * Accumulator: @active · ((Z_next − Z − selector·Σh) · (t+β) + m)@
+
+The function also advances the flat eval @offset@ by nc_k + 3.
 -}
-{-# INLINEABLE lookupHornerForK #-}
-lookupHornerForK ::
-    VerifyingKey ->
-    Proof ->
-    Scalar -> -- l0
-    Scalar -> -- lLast
-    Scalar -> -- activeRows
-    Scalar -> -- theta
-    Scalar -> -- beta
-    Scalar -> -- gamma
-    (GateExpr -> Scalar) -> -- evalE
-    Scalar -> -- y (Horner challenge)
-    Scalar -> -- acc
+{-# INLINEABLE logupHornerForK #-}
+logupHornerForK ::
+    [[[[GateExpr]]]] -> -- liExprs: per-lookup chunk expressions
+    [[GateExpr]] ->     -- ltExprs: per-lookup table expressions
+    [GateExpr] ->       -- lsExprs: per-lookup selector expressions
+    [Integer] ->        -- logupEvs: flat LogUp evaluations
+    Scalar -> -- l₀
+    Scalar -> -- l_last
+    Scalar -> -- activeRows = 1 − l_last − l_blind
+    Scalar -> -- θ: compression challenge
+    Scalar -> -- β: LogUp challenge
+    Scalar -> -- y: Horner challenge
+    (GateExpr -> Scalar) -> -- evalE: on-chain gate expression evaluator
+    (Scalar, Integer) -> -- (accumulator, offset)
     Integer -> -- k: lookup index
-    Scalar
-lookupHornerForK vk prf l0 lLast activeRows theta beta gamma evalE y acc k =
+    (Scalar, Integer)
+logupHornerForK liExprs ltExprs lsExprs logupEvs l0 lLast activeRows theta beta y evalE (acc, offset) k =
     let
-        luE fld = mkScalar (prfLookupEvals prf !! (5 * k + fld))
-        prodEval = luE 0 -- z_k(x)
-        prodNext = luE 1 -- z_k(ωx)
-        inputEval = luE 2 -- A'_k(x)
-        inputInv = luE 3 -- A'_k(ω⁻¹·x)
-        tableEval = luE 4 -- S'_k(x)
-        compressExprs = foldl (\a e -> a * theta + evalE e) zero
+        chunkExprs = fastIndex liExprs k
+        nc = length chunkExprs
 
-        inputArgs = compressExprs (vkLookupInputExprs vk !! k)
-        tableArgs = compressExprs (vkLookupTableExprs vk !! k)
+        -- Extract LogUp evals from the flat array at this lookup's offset:
+        --   offset+0: mult_eval; +1..+nc: helper_evals; +nc+1: accum_eval; +nc+2: accum_next_eval
+        multEval      = mkScalar (fastIndex logupEvs offset)
+        helperEvals   = map (\j -> mkScalar (fastIndex logupEvs (offset + 1 + j))) (enumFromTo 0 (nc - 1))
+        accumEval     = mkScalar (fastIndex logupEvs (offset + nc + 1))
+        accumNextEval = mkScalar (fastIndex logupEvs (offset + nc + 2))
 
-        leftProd = prodNext * (inputEval + beta) * (tableEval + gamma)
-        rightProd = prodEval * (inputArgs + beta) * (tableArgs + gamma)
-        e0 = l0 * (one - prodEval)
-        e1 = lLast * (prodEval * prodEval - prodEval)
-        e2 = activeRows * (leftProd - rightProd)
-        e3 = l0 * (inputEval - tableEval)
-        e4 = activeRows * (inputEval - tableEval) * (inputEval - inputInv)
-     in
-        ((((acc * y + e0) * y + e1) * y + e2) * y + e3) * y + e4
+        compressExprs exprs = foldl (\a e -> a * theta + evalE e) zero exprs
+
+        -- 1. Boundary: (l₀ + l_last) · Z(x)
+        boundary = (l0 + lLast) * accumEval
+        acc1 = acc * y + boundary
+
+        -- 2. Helper constraints
+        acc2 =
+            foldl
+                (\a (parallelInputExprs, h_c) ->
+                    let fsBeta = map (\ws -> compressExprs ws + beta) parallelInputExprs
+                        product_c = foldl (*) one fsBeta
+                        sumParts  = sum (partialProds fsBeta)
+                    in a * y + (h_c * product_c - sumParts))
+                acc1
+                (zip chunkExprs helperEvals)
+
+        -- 3. Accumulator constraint on active rows:
+        --    active · ((Z_next − Z − selector · Σ_c h_c) · (t + β) + m) = 0
+        tableCompressed = compressExprs (fastIndex ltExprs k)
+        selectorVal = evalE (fastIndex lsExprs k)
+        sumH = foldl (+) zero helperEvals
+        accumConstraint =
+            activeRows *
+            ((accumNextEval - accumEval - selectorVal * sumH) * (tableCompressed + beta) + multEval)
+
+        acc3 = acc2 * y + accumConstraint
+    in
+        (acc3, offset + nc + 3)
+
+{- | For a list @[a₀, …, aₙ₋₁]@, return @[Π_{k≠0}aₖ, …, Π_{k≠n−1}aₖ]@.
+
+Uses a prefix/suffix product sweep — no field inversions required.
+-}
+{-# INLINEABLE partialProds #-}
+partialProds :: [Scalar] -> [Scalar]
+partialProds []  = []
+partialProds [_] = [one]
+partialProds xs  =
+    let revList  = foldl (\acc x -> x : acc) [] xs
+        (revPfxs, _) = foldl (\(ps, acc) x -> (acc : ps, acc * x)) ([], one) xs
+        (result, _)  =
+            foldl
+                (\(res, sfx) (pfx, rx) -> (pfx * sfx : res, sfx * rx))
+                ([], one)
+                (zip revPfxs revList)
+    in result
 
 -- ===========================================================================
 -- Generic GWC core (circuit-agnostic)
@@ -698,43 +808,34 @@ assembleRotationSets ::
     Scalar ->
     -- | x·ω:   rotation +1
     Scalar ->
-    -- | x·ω⁻¹: rotation −1
-    Scalar ->
     -- | x·ω^{−(blinding+1)}: last usable row rotation
     Scalar ->
-    -- | h(x): verifier-derived gate evaluation (from 'computeHEval')
+    -- | L(x): linearization commitment evaluation (from 'computeHEval')
     Scalar ->
     -- | x^{N-1}: precomputed in 'verify' to share with xn = hSplit·x
     Scalar ->
+    -- | x^n − 1: used to scale h-piece commitment scalars by (1 − x^n)
+    Scalar ->
+    -- | [(col_idx, c_k)]: simple-selector commitment scalars from 'computeHEval'
+    [(Integer, Scalar)] ->
     [RotationSet]
-assembleRotationSets vk prf specs x x1 xNext xPrev xLast hEval hSplit =
+assembleRotationSets vk prf specs x x1 xNext xLast linComEval hSplit xnMinusOne selColData =
     let
         -- G1 elements decoded once; bls12_381_G1_uncompress paid once per commitment.
-        -- Proof commitments (advice cols queried at multiple rotations appear in
-        -- several rotation sets; decoding once avoids re-paying the builtin cost).
-        advicePts = map bls12_381_G1_uncompress (prfAdviceComs prf)
-        lookupTablePts = map bls12_381_G1_uncompress (prfLookupTableComs prf)
-        trashPts = map bls12_381_G1_uncompress (prfTrashComs prf)
-        fixedPts = map bls12_381_G1_uncompress (vkFixedComs vk)
-        permSigmaPts = map bls12_381_G1_uncompress (vkPermSigmaComs vk)
-        hPts = map bls12_381_G1_uncompress (prfHComs prf)
-        randomPt = bls12_381_G1_uncompress (prfRandomCom prf)
-        permProdPts = map bls12_381_G1_uncompress (prfPermProdComs prf)
-        lookupProdPts = map bls12_381_G1_uncompress (prfLookupProdComs prf)
-        lookupInputPts = map bls12_381_G1_uncompress (prfLookupInputComs prf)
-
-        -- Scalar evals decoded once; mkScalar validates [0, q) on entry.
-        advEvalsRS = map mkScalar (prfAdviceEvals prf)
-        fixEvalsRS = map mkScalar (prfFixedEvals prf)
-        permSigEvalsRS = map mkScalar (prfPermSigmaEvals prf)
-        permProdEvalsRS = map mkScalar (prfPermProdEvals prf)
-        lookupEvalsRS = map mkScalar (prfLookupEvals prf)
-        trashEvalsRS = map mkScalar (prfTrashEvals prf)
-        randomEvalRS = mkScalar (prfRandomEval prf)
+        advicePts     = map bls12_381_G1_uncompress (prfAdviceComs prf)
+        lookupMultPts = map bls12_381_G1_uncompress (prfLookupMultComs prf)
+        -- Flat list of all LogUp helper commitments across all lookups
+        lookupHelperPts = map bls12_381_G1_uncompress (concatMap (\x -> x) (prfLookupHelperComs prf))
+        lookupAccumPts  = map bls12_381_G1_uncompress (prfLookupAccumComs prf)
+        trashPts      = map bls12_381_G1_uncompress (prfTrashComs prf)
+        fixedPts      = map bls12_381_G1_uncompress (vkFixedComs vk)
+        permSigmaPts  = map bls12_381_G1_uncompress (vkPermSigmaComs vk)
+        hPts          = map bls12_381_G1_uncompress (prfHComs prf)
+        permProdPts   = map bls12_381_G1_uncompress (prfPermProdComs prf)
 
         -- ── Resolve a rotation offset to an evaluation point ─────────────
-        omg = ccOmega (vkConfig vk)
-        omgInv = ccOmegaInv (vkConfig vk)
+        omg     = ccOmega (vkConfig vk)
+        omgInv  = ccOmegaInv (vkConfig vk)
         blinding = ccBlinding (vkConfig vk)
 
         toRotation :: Integer -> Rotation
@@ -746,56 +847,54 @@ assembleRotationSets vk prf specs x x1 xNext xPrev xLast hEval hSplit =
             | otherwise = RotArb r
 
         evalPt :: Rotation -> Scalar
-        evalPt RotCur = x
+        evalPt RotCur  = x
         evalPt RotNext = xNext
-        evalPt RotPrev = xPrev
+        evalPt RotPrev = x * omgInv  -- rotation −1 (not used in v7 circuits but kept for completeness)
         evalPt RotLast = xLast
         evalPt (RotArb r)
-            | 1 <= r = x * (powers omg (r + 1) !! r)
-            | otherwise = x * (powers omgInv ((-r) + 1) !! (-r))
+            | 1 <= r    = x * fastIndex (powers omg (r + 1)) r
+            | otherwise = x * fastIndex (powers omgInv ((-r) + 1)) (-r)
 
         -- ── (scalar, G1) pair(s) for one slot ────────────────────────────
-        --
-        -- Returns parallel (scalars, points) lists. No EC scalar muls here;
-        -- the x₁^j factors are combined with x₄^i in verifyGwc's mega-MSM.
-        -- H (kind 6) expands to nh pairs; all other kinds contribute one (or zero).
         getComPairs :: Scalar -> SlotSpec -> ([Scalar], [G1])
         getComPairs x1j ss =
             let i = ssIndex ss
              in case ssKind ss of
-                    SKInstance -> ([], []) -- zero polynomial; contributes nothing
-                    SKH ->
-                        -- nh entries, scalar = x₁^j · hSplit^m for m = 0..nh-1
+                    SKInstance    -> ([], [])  -- zero polynomial; contributes nothing
+                    SKH           ->
+                        -- lin_com(X) = (1-x^n)*h(X) + Σ_k c_k * S_k(X)
+                        -- The verifier-side MSM for the H slot:
+                        --   h-pieces: x1j * (1-x^n) * hSplit^l * [h_l]  for each piece l
+                        --   sel cols: x1j * c_k * [S_k]                 for each simple sel col k
                         let nh = ccNumHPieces (vkConfig vk)
-                         in (map (x1j *) (powers hSplit nh), hPts)
-                    SKAdvice -> ([x1j], [advicePts !! i])
-                    SKLookupTable -> ([x1j], [lookupTablePts !! i])
-                    SKTrash -> ([x1j], [trashPts !! i])
-                    SKFixed -> ([x1j], [fixedPts !! i])
-                    SKPermSigma -> ([x1j], [permSigmaPts !! i])
-                    SKRandom -> ([x1j], [randomPt])
-                    SKPermProd -> ([x1j], [permProdPts !! i])
-                    SKLookupProd -> ([x1j], [lookupProdPts !! i])
-                    SKLookupInput -> ([x1j], [lookupInputPts !! i])
+                            negXnM1 = zero - xnMinusOne  -- (1 - x^n) = -(x^n - 1)
+                            scale01 = x1j * negXnM1
+                            hPieceScalars = map (scale01 *) (powers hSplit nh)
+                            selScalars = map (\(_, ck) -> x1j * ck) selColData
+                            selPts = map (\(colIdx, _) -> fastIndex fixedPts colIdx) selColData
+                        in (hPieceScalars <> selScalars, hPts <> selPts)
+                    SKAdvice      -> ([x1j], [fastIndex advicePts i])
+                    SKLogupMult   -> ([x1j], [fastIndex lookupMultPts i])
+                    SKTrash       -> ([x1j], [fastIndex trashPts i])
+                    SKFixed       -> ([x1j], [fastIndex fixedPts i])
+                    SKPermSigma   -> ([x1j], [fastIndex permSigmaPts i])
+                    SKPermProd    -> ([x1j], [fastIndex permProdPts i])
+                    SKLogupAccum  -> ([x1j], [fastIndex lookupAccumPts i])
+                    SKLogupHelper -> ([x1j], [fastIndex lookupHelperPts i])
 
         -- ── Evaluation of one slot at a given rotation position ─────────
+        -- ssEvalVals is precomputed at parse time (off-chain), so indexing by rotPos
+        -- costs O(rotPos) ≤ O(4) rather than O(absIdx) ≤ O(195).
+        -- SKH at RotCur uses the verifier-derived linComEval = L(x).
+        -- SKInstance is always zero (committed to G1_zero).
         getEval :: SlotSpec -> Integer -> Rotation -> Scalar
         getEval ss rotPos rot =
-            let i = ssIndex ss
-                luE field = lookupEvalsRS !! (5 * i + field)
-                ppE fld = permProdEvalsRS !! (3 * i + fld)
-             in case ssKind ss of
-                    SKAdvice -> advEvalsRS !! (ssEvalIdxs ss !! rotPos)
-                    SKFixed -> fixEvalsRS !! (ssEvalIdxs ss !! rotPos)
-                    SKLookupTable -> luE 4
-                    SKTrash -> trashEvalsRS !! i
-                    SKPermSigma -> permSigEvalsRS !! i
-                    SKH -> hEval
-                    SKRandom -> randomEvalRS
-                    SKInstance -> zero
-                    SKPermProd -> case rot of RotCur -> ppE 0; RotNext -> ppE 1; _ -> ppE 2
-                    SKLookupProd -> case rot of RotCur -> luE 0; _ -> luE 1
-                    SKLookupInput -> case rot of RotCur -> luE 2; _ -> luE 3
+            case ssKind ss of
+                SKH        -> case rot of
+                                  RotCur -> linComEval
+                                  _      -> fastIndex (ssEvalVals ss) rotPos
+                SKInstance -> zero
+                _          -> fastIndex (ssEvalVals ss) rotPos
 
         -- ── Build one RotationSet from its spec ───────────────────────────
         buildSet :: RotationSetSpec -> RotationSet

@@ -25,6 +25,7 @@ let
     src = craneLib.cleanCargoSource ../.;
     strictDeps = true;
     doCheck = false;
+    cargoExtraArgs = "--features fewer-point-sets";
   } // lib.optionalAttrs (system == "x86_64-linux") {
     CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
     CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
@@ -39,7 +40,7 @@ let
   rust-midnight-zk = craneLib.buildPackage (rustCommonArgs // rustPkg // {
     inherit cargoArtifacts;
     copyLibs = true;
-    cargoExtraArgs = "--bin write-test-vectors";
+    cargoExtraArgs = "--bin write-test-vectors --features fewer-point-sets";
   });
 
   # Haskell.nix based executables

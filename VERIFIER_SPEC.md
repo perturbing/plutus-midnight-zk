@@ -48,9 +48,9 @@ implementation in `Verifier.hs` and `JsonParser.hs` against the JSON test vector
 
 verify vk proof specs pubInputs
   ├─ Transcript → x, x₁, x₂, x₃, x₄, y, θ, β, γ, trashChal
-  ├─ computeHEval → h(x)          (gate constraint soundness check)
-  ├─ assembleRotationSets → [RotationSet]  (circuit-aware, spec-driven)
-  └─ verifyGwc → Bool             (fully circuit-agnostic KZG check)
+  ├─ computeHEval → (hEval, linComEval, selColData)   (gate check + linearization eval)
+  ├─ assembleRotationSets → [RotationSet]              (circuit-aware, spec-driven)
+  └─ verifyGwc → Bool                                  (fully circuit-agnostic KZG check)
         └─ bls12_381_finalVerify  (single pairing equation)
 ```
 
@@ -156,14 +156,32 @@ is also circuit-design-dependent and in its own file.
 
 ```json
 {
-  "gate_polys":            [ <instr_array>, ... ],  // one RPN instruction array per gate poly
-  "perm_col_types":        [{"col_type":<0|1|2>,"eval_idx":<int>}, ...],  // npc entries
-  "lookup_input_exprs":    [ [<instr_array>, ...], ... ],  // nl × (variable number) of expressions
-  "lookup_table_exprs":    [ [<instr_array>, ...], ... ],  // nl × (variable number) of expressions
-  "trash_selectors":       [ <instr_array>, ... ],  // one per trashcan argument
+  "gate_polys":             [ <instr_array>, ... ],  // one RPN instruction array per gate poly
+  "gate_sel_cols":          [ <uint> | null, ... ],  // parallel to gate_polys (see below)
+  "perm_col_types":         [{"col_type":<0|1|2>,"eval_idx":<int>}, ...],  // npc entries
+  "lookup_input_exprs":     [ [ [<instr_array>, ...], ... ], ... ],  // nl × chunk × parallel_input × width
+  "lookup_table_exprs":     [ [<instr_array>, ...], ... ],  // nl × width_exprs (for θ-compression)
+  "lookup_selector_exprs":  [ <instr_array>, ... ],  // nl entries — one selector per lookup
+  "trash_selectors":        [ <instr_array>, ... ],  // one per trashcan argument
   "trash_constraint_exprs": [ [<instr_array>, ...], ... ]  // one list of exprs per trashcan
 }
 ```
+
+**`gate_sel_cols`** is a new field parallel to `gate_polys`. For each gate polynomial, the
+value is either the fixed **column index** (into `vkFixedComs`) of the simple selector that
+gates this polynomial, or `null` if the gate uses no simple selector. Simple selectors are
+boolean polynomials that are 0 or 1 on every row; midnight-proofs does not include them in
+the multi-open proof stream and instead handles their commitment via the linearization
+polynomial `lin_com`. The verifier uses `gate_sel_cols` to compute the linearization
+commitment evaluation `linComEval` (see §7.2 and §6.2).
+
+**`lookup_input_exprs`** has a 4-level nested structure for the LogUp argument:
+`[lookup][chunk][parallel_input][width_exprs]`. Each innermost array encodes one expression
+in RPN format (see §3.3). A "chunk" groups input expressions whose combined degree stays
+within `cs_degree`; "parallel inputs" are the multiple inputs that are θ-compressed together.
+
+**`lookup_selector_exprs`** contains one RPN expression per lookup that evaluates to 1 on
+rows where the lookup is active and 0 elsewhere.
 
 **`perm_col_types`** encodes how to look up each permutation column's evaluation at `x`:
 
@@ -327,20 +345,16 @@ Slots within a set are in x₁-power order (the order they are multiplied by pow
 |-------------|-----------------|-----------|------------|
 | `"Advice"` | advice column index | `prfAdviceComs[index]` | `prfAdviceEvals[eval_idxs[rotPos]]` |
 | `"Instance"` | (ignored — see note) | G1 identity | `zero` (hardcoded) |
-| `"LookupTable"` | lookup index k | `prfLookupTableComs[k]` | `prfLookupEvals[5k+4]` |
-| `"Trash"` | trash index k | `prfTrashComs[k]` | `prfTrashEvals[k]` |
+| `"LogupMult"` | lookup index k | `prfLookupMultComs[k]` | `prfLogupEvals[eval_idxs[rotPos]]` |
+| `"Trash"` | trash index k | `prfTrashComs[k]` | `prfTrashEvals[eval_idxs[rotPos]]` |
 | `"Fixed"` | fixed column index | `vkFixedComs[index]` | `prfFixedEvals[eval_idxs[rotPos]]` |
-| `"PermSigma"` | sigma column index | `vkPermSigmaComs[index]` | `prfPermSigmaEvals[index]` |
-| `"H"` | (ignored) | all `prfHComs[0..nh−1]` with hSplit scaling | `hEval` (computed by verifier) |
-| `"Random"` | (ignored) | `prfRandomCom` | `prfRandomEval` |
-| `"PermProd"` | chunk index j | `prfPermProdComs[j]` | `prfPermProdEvals[...]` (see §3.5.1) |
-| `"LookupProd"` | lookup index k | `prfLookupProdComs[k]` | `prfLookupEvals[5k+0]` (rot 0) or `[5k+1]` (rot +1) |
-| `"LookupInput"` | lookup index k | `prfLookupInputComs[k]` | `prfLookupEvals[5k+2]` (rot 0) or `[5k+3]` (rot −1) |
+| `"PermSigma"` | sigma column index | `vkPermSigmaComs[index]` | `prfPermSigmaEvals[eval_idxs[rotPos]]` |
+| `"H"` | (ignored) | lin_com commitment (see §7.2) | `linComEval` at RotCur; dummy evals otherwise |
+| `"PermProd"` | chunk index j | `prfPermProdComs[j]` | `prfPermProdEvals[eval_idxs[rotPos]]` |
+| `"LogupAccum"` | lookup index k | `prfLookupAccumComs[k]` | `prfLogupEvals[eval_idxs[rotPos]]` |
+| `"LogupHelper"` | flat helper index | `prfLookupHelperComs[index]` (flat concat) | `prfLogupEvals[eval_idxs[rotPos]]` |
 
-> **Why `index` is ignored for `Instance`, `H`, and `Random`:**
-> The GWC KZG opening is fully generic — it processes every slot as a `(commitment, evaluation)`
-> pair regardless of column type. Three kinds deviate from the normal "use `index` to look up
-> which polynomial" pattern for Halo2-specific reasons:
+> **Why `index` is ignored for `Instance` and `H`:**
 >
 > - **`Instance`**: midnight-zk never commits to an instance column in the normal sense.
 >   Instance column 0 is the zero polynomial (public inputs are handled via Lagrange
@@ -348,32 +362,37 @@ Slots within a set are in x₁-power order (the order they are multiplied by pow
 >   evaluation is always 0. Both values are fixed by convention; nothing is read from the proof
 >   and `index` is meaningless.
 >
-> - **`H`** (quotient polynomial): `h(X)` is split into `nh` physical pieces
->   `prfHComs[0..nh−1]`, all of which are used together scaled by powers of
->   `hSplit = x^{N-1}` — there is no single indexed commitment to pick. Its evaluation
->   `hEval` is not read from the proof at all; the verifier derives it from the gate
->   constraint sum (`computeHEval`) and the KZG opening then enforces consistency. So both
->   the commitment and the evaluation bypass the `index` field entirely.
->
-> - **`Random`**: there is exactly one blinding polynomial per proof — a singleton, not an
->   array. `prfRandomCom` and `prfRandomEval` are read directly; there is nothing to index into.
+> - **`H`** (linearization commitment): `lin_com` is built from `nh` h-piece commitments
+>   `prfHComs[0..nh−1]` **plus** the simple-selector column commitments from `vkFixedComs`.
+>   There is no single indexed commitment to pick. Its evaluation `linComEval` is derived by
+>   the verifier from the gate constraint sum (see §7.2). Both the commitment MSM and the
+>   evaluation bypass the `index` field entirely.
 
-For `"Advice"` and `"Fixed"`: `eval_idxs[rotPos]` gives the index into `prfAdviceEvals` /
-`prfFixedEvals` for the rotation at position `rotPos` in the set's rotation list.
+For `"Advice"`, `"Fixed"`, `"LogupMult"`, `"LogupAccum"`, `"LogupHelper"`, `"PermProd"`,
+`"PermSigma"`, and `"Trash"`: `eval_idxs[rotPos]` is an absolute offset into the unified
+evaluation array:
 
-For all other kinds, `eval_idxs` contains zeros and is not used by the verifier.
+```
+unifiedEvals = adviceEvals | fixedEvals | sigmaEvals | permProdEvals |
+               logupEvals  | trashEvals | dummyEvals
+```
 
-#### 3.5.1 PermProd eval dispatch
+For `"H"` at `RotCur`, the eval is `linComEval` (not from the proof). At other rotations,
+`eval_idxs[rotPos]` indexes into the `dummyEvals` tail of `unifiedEvals` — these are the
+fewer-point-sets dummy evaluations generated by the prover for the merged rotation set.
 
-`prfPermProdEvals` is a flat list of length `(np−1) × 3 + 2`:
+For `"Instance"`, `eval_idxs` is unused; commitment and eval are always zero.
 
-- Non-last chunk `j` (0..np−2): indices `3j`, `3j+1`, `3j+2` = evaluations at `x`, `x·ω`, `x·ω^last`
-- Last chunk (index np−1): indices `3(np−1)`, `3(np−1)+1` = evaluations at `x`, `x·ω` only
+#### 3.5.1 PermProd eval layout
 
-Dispatch in kind `"PermProd"`:
-- rotation 0 → field 0 (index `3j`)
-- rotation +1 → field 1 (index `3j+1`)
-- any other (x·ω^last) → field 2 (index `3j+2`)
+`prfPermProdEvals` is flattened to a list of length `(np−1) × 3 + 2`:
+
+- Non-last chunk `j` (0..np−2): 3 evals = Z_j(x), Z_j(xω), Z_j(xω^last) → indices `3j`, `3j+1`, `3j+2`
+- Last chunk (index np−1): 2 evals = Z_{np−1}(x), Z_{np−1}(xω) → indices `3(np−1)`, `3(np−1)+1`
+
+The `eval_idxs` in `rotation_sets.json` for `"PermProd"` slots contain the **absolute offsets
+into `unifiedEvals`** (not chunk-relative indices). Each rotation position in the set maps to
+the precomputed absolute offset for that (chunk, rotation) pair.
 
 ---
 
@@ -386,58 +405,74 @@ All G1 points are 48-byte hex strings. All scalar evaluations are 32-byte LE hex
 ```json
 {
   "advice_commitments":              ["<48-byte hex>", ...],  // na entries [a_i]₁
-  "lookup_permuted_commitments":     [
-    {"permuted_input": "<hex>", "permuted_table": "<hex>"},   // nl entries: [A'_k]₁, [S'_k]₁
-    ...
-  ],
+  "lookup_multiplicity_commitments": ["<48-byte hex>", ...],  // nl entries [m_k]₁ (one per lookup)
   "permutation_product_commitments": ["<48-byte hex>", ...],  // np entries [Z_j]₁
-  "lookup_product_commitments":      ["<48-byte hex>", ...],  // nl entries [Z^lp_k]₁
-  "trash_commitments":               ["<48-byte hex>", ...],  // ntrash entries
-  "random_poly_commitment":          "<48-byte hex>",         // [r]₁
-  "h_commitments":                   ["<48-byte hex>", ...],  // nh entries [h_j]₁
-
-  "advice_evals":                    ["<32-byte hex>", ...],  // naq entries, in cs.advice_queries() order
-  "fixed_evals":                     ["<32-byte hex>", ...],  // nfq entries, in cs.fixed_queries() order
-  "random_eval":                     "<32-byte hex>",         // r(x)
-  "sigma_evals":                     ["<32-byte hex>", ...],  // npc entries σ_i(x)
-  "permutation_product_evals":       [                        // np objects
-    {"eval": "<hex>", "next_eval": "<hex>", "last_eval": "<hex>" | null},
-    ...
-  ],
-  "lookup_evals":                    [                        // nl objects, 5 evals each
+  "lookup_logup_commitments": [                               // nl entries, one per lookup k
     {
-      "product_eval":            "<32-byte hex>",  // Z^lp_k(x)
-      "product_next_eval":       "<32-byte hex>",  // Z^lp_k(x·ω)
-      "permuted_input_eval":     "<32-byte hex>",  // A'_k(x)
-      "permuted_input_inv_eval": "<32-byte hex>",  // A'_k(x·ω⁻¹)
-      "permuted_table_eval":     "<32-byte hex>"   // S'_k(x)
+      "helpers":     ["<48-byte hex>", ...],  // nc_k entries: [h_{k,0}]₁ … [h_{k,nc_k−1}]₁
+      "accumulator": "<48-byte hex>"          // [Z_k]₁
     },
     ...
   ],
-  "trash_evals":                     ["<32-byte hex>", ...],  // ntrash entries
+  "trash_commitments":               ["<48-byte hex>", ...],  // ntrash entries [r_t]₁
+  "h_commitments":                   ["<48-byte hex>", ...],  // nh entries [h_j]₁
+
+  "advice_evals":     ["<32-byte hex>", ...],  // naq entries, in cs.advice_queries() order
+  "fixed_evals":      ["<32-byte hex>", ...],  // nfq_total entries; simple selectors set to LE(1)
+  "sigma_evals":      ["<32-byte hex>", ...],  // npc entries σ_i(x)
+  "permutation_product_evals": [               // np objects
+    {"eval": "<hex>", "next_eval": "<hex>", "last_eval": "<hex>" | null},
+    ...
+  ],
+  "lookup_evals": [                            // nl objects
+    {
+      "mult_eval":       "<32-byte hex>",      // m_k(x)
+      "helper_evals":    ["<32-byte hex>", ...],  // nc_k entries: h_{k,0}(x) … h_{k,nc_k−1}(x)
+      "accum_eval":      "<32-byte hex>",      // Z_k(x)
+      "accum_next_eval": "<32-byte hex>"       // Z_k(x·ω)
+    },
+    ...
+  ],
+  "trash_evals":      ["<32-byte hex>", ...],  // ntrash entries r_t(x)
+  "dummy_evals":      ["<32-byte hex>", ...],  // fewer-point-sets dummy evals (may be empty)
   "gwc": {
-    "f_commitment": "<48-byte hex>",      // [f]₁ — GWC auxiliary polynomial
-    "q_evals":      ["<32-byte hex>", ...],  // nq entries: prover's q_i(x₃)
-    "w_commitment": "<48-byte hex>"       // [w]₁ — KZG opening witness π
+    "f_commitment": "<48-byte hex>",           // [f]₁ — GWC auxiliary polynomial
+    "q_evals":      ["<32-byte hex>", ...],    // nq entries: prover's q_i(x₃)
+    "w_commitment": "<48-byte hex>"            // [w]₁ — KZG opening witness π
   }
 }
 ```
 
-**`permutation_product_evals`**: for the last chunk (which opens only at `x` and `x·ω`),
-`last_eval` is `null`. For all other chunks, `last_eval` is the evaluation at `x·ω^last`.
-The `parsePlutusProof` function flattens this into `prfPermProdEvals` (see §3.5.1).
+**`fixed_evals`**: the serialiser reads `nfq_actual = nfq_total − num_simple_selectors` values
+from the raw proof, then inserts the LE encoding of 1 at every simple-selector position
+(determined by `simple_selector_mask` in `*_plutus_vk.json`) to reconstruct the full
+`nfq_total`-length array. The Haskell verifier filters simple-selector positions back out when
+absorbing into the transcript (they are not sent by the prover), but uses the full array
+(with substituted 1s) when evaluating gate expressions via `fixEvals[qi]`.
 
-**`instance_poly_eval`**: omitted from the JSON. midnight-zk does not use committed instances
-(col 0 is the zero polynomial, so the eval is always 0). The 32 bytes are still present in
-the raw proof byte stream and consumed by the Rust serialiser to keep subsequent offsets
-correct, but they are not written to JSON. The Haskell verifier hardcodes 0 at all use
-sites — for `instEvals[0]` and for the transcript absorption — so no information is lost.
+**`permutation_product_evals`**: for the last chunk `last_eval` is `null`. All other chunks
+include `last_eval` = evaluation at `x·ω^last`. `parsePlutusProof` flattens this into
+`prfPermProdEvals` (see §3.5.1).
 
-**`lookup_evals` flatten order** in `prfLookupEvals` (5 per lookup k, in k order):
+**`lookup_evals` flatten order** in `prfLogupEvals`: for lookup k with nc_k chunks,
+offset(k) = Σ_{i<k}(nc_i + 3):
 ```
-[Z^lp_0(x), Z^lp_0(x·ω), A'_0(x), A'_0(x·ω⁻¹), S'_0(x),
- Z^lp_1(x), Z^lp_1(x·ω), A'_1(x), A'_1(x·ω⁻¹), S'_1(x), ...]
+[offset+0]:          mult_eval  m_k(x)
+[offset+1..offset+nc]: helper_evals  h_{k,0}(x) … h_{k,nc_k−1}(x)
+[offset+nc+1]:       accum_eval  Z_k(x)
+[offset+nc+2]:       accum_next_eval  Z_k(x·ω)
 ```
+
+**`dummy_evals`**: present when the circuit was compiled with the `fewer-point-sets` feature.
+These are synthetic evaluations appended at the end of the scalar stream (after `trash_evals`,
+before the GWC `f_commitment`). They are absorbed into the Fiat-Shamir transcript as part of
+`allEvals` before x₁/x₂ are squeezed, and are referenced by `eval_idxs` entries in the
+rotation set for the H slot at non-current rotations.
+
+**`instance_poly_eval`**: omitted from the JSON. The committed instance polynomial is the
+zero polynomial in midnight-zk (col 0 is always G1 identity), so its evaluation is 0. The
+32 bytes are consumed from the raw proof stream to maintain offset alignment but are not
+written to JSON. The verifier absorbs the constant 0 at this transcript position.
 
 ---
 
@@ -463,7 +498,7 @@ replaced by the 32-byte hash, not appended.
 
 This matches the midnight-zk Rust prover: `transcript_data = blake2b_256(transcript_data)`.
 
-Absorption order (must exactly match the prover):
+Absorption order (must exactly match the midnight-zk v7 LogUp prover):
 
 ```
 state₀ = vkTranscriptRepr                            // 32 bytes — circuit identity
@@ -471,46 +506,69 @@ state₁ = state₀ <> G1_compressed_zero               // 48 bytes — instance
 state₂ = absorb state₁ (LE_32(len(pubInputs)))
 state₃ = foldl (\s n -> s <> LE_32(n)) state₂ pubInputs
 
+-- Advice commitments → θ (lookup θ-compression challenge)
 state₄ = foldl (<>) state₃ prfAdviceComs            // na × 48 bytes
-(θ, state₄s) = squeeze state₄                        // lookup compression challenge
+(θ, state₄s) = squeeze state₄
 
-state₅ = foldl (<>) state₄s (interleave prfLookupInputComs prfLookupTableComs)
-(β, state₅s) = squeeze state₅                        // permutation/lookup challenge
-(γ, state₅ss) = squeeze state₅s
+-- Multiplicity commitments → β, γ (permutation + LogUp challenges)
+state₅ = foldl (<>) state₄s prfLookupMultComs       // nl × 48 bytes
+(β, state₅b) = squeeze state₅
+(γ, state₅g) = squeeze state₅b
+-- Note: β is used in both the permutation argument and the LogUp constraint.
+--       γ is used only in the permutation argument.
 
-state₆ = foldl (<>) state₅ss prfPermProdComs
-state₇ = foldl (<>) state₆ prfLookupProdComs
-(trashChal, state₇s) = squeeze state₇               // trash challenge — BEFORE trash coms
+-- Permutation z-product commitments (no squeeze here)
+state₆ = foldl (<>) state₅g prfPermProdComs         // np × 48 bytes
+
+-- Per-lookup LogUp commitments: for each lookup k absorb helpers then accumulator
+state₇ = foldl (\s (helpers, accum) -> foldl (<>) s helpers <> accum)
+               state₆
+               (zip prfLookupHelperComs prfLookupAccumComs)
+(trashChal, state₇s) = squeeze state₇               // squeezed AFTER all perm+logup coms
+
+-- Trash commitments → y (gate Horner-folding challenge)
 state₇t = foldl (<>) state₇s prfTrashComs
+(y, state₈s) = squeeze state₇t
 
-state₈ = state₇t <> prfRandomCom
-(y, state₈s) = squeeze state₈                        // gate folding challenge
-
+-- h-piece commitments → x (shared evaluation point)
 state₉ = foldl (<>) state₈s prfHComs
-(x, state₉s) = squeeze state₉                        // shared evaluation point
+(x, state₉s) = squeeze state₉
 
--- Absorb all evaluations in canonical order:
-allEvals = [0] ++ prfAdviceEvals ++ prfFixedEvals ++ [prfRandomEval]
-        -- ^ 0: instance_poly_eval hardcoded (always zero in midnight-zk)
-        ++ prfPermSigmaEvals ++ prfPermProdEvals ++ prfLookupEvals ++ prfTrashEvals
-state₁₀ = foldl (\s n -> s <> LE_32(n)) state₉s allEvals
+-- Committed instance eval: always 0 in midnight-zk (absorb constant 0)
+state₉i = absorb state₉s (LE_32 0)
+
+-- All polynomial evaluations in canonical order.
+-- Simple-selector fixed evals (where simpleSelectorMask[i] = True) are substituted
+-- with 1 by the verifier but are NOT absorbed — the prover omits them from the stream.
+allEvals = [0]                          -- instance_poly_eval placeholder (always 0)
+        ++ prfAdviceEvals               -- naq entries
+        ++ fixForTranscript             -- nfq_total − num_simple_selectors entries
+        ++ prfPermSigmaEvals            -- npc entries
+        ++ prfPermProdEvals             -- num_ppe entries
+        ++ prfLogupEvals                -- Σ_k(nc_k + 3) entries across all lookups
+        ++ prfTrashEvals                -- ntrash entries
+        ++ prfDummyEvals                -- fewer-point-sets dummy evals (0 if none)
+-- where fixForTranscript = [ v | (isSel, v) <- zip simpleSelectorMask prfFixedEvals, not isSel ]
+state₁₀ = foldl (\s n -> s <> LE_32(n)) state₉i allEvals
 
 (x₁, state₁₀s) = squeeze state₁₀                   // within-set combiner
 (x₂, state₁₀ss) = squeeze state₁₀s                 // across-set combiner
 
+-- f commitment → x₃ (GWC opening point)
 state₁₁ = state₁₀ss <> prfFCom
-(x₃, state₁₁s) = squeeze state₁₁                   // opening point for f
+(x₃, state₁₁s) = squeeze state₁₁
 
+-- q_evals_on_x₃ → x₄ (fold combiner)
 state₁₂ = foldl (\s n -> s <> LE_32(n)) state₁₁s prfQEvalsOnX3
-(x₄, _) = squeeze state₁₂                           // fold combiner
+(x₄, _) = squeeze state₁₂
 ```
 
-`interleave [a₀,a₁,...] [b₀,b₁,...] = [a₀,b₀,a₁,b₁,...]`.
 `LE_32(n) = integerToByteString LittleEndian 32 n`.
 
-**Critical ordering note:** `trashChal` is squeezed AFTER perm/lookup product coms but
-BEFORE the trash coms are absorbed. For circuits with `ntrash = 0`, `prfTrashComs` is
-empty, but the squeeze still happens.
+**Critical ordering note:** `trashChal` is squeezed once, **after** absorbing all perm
+z-product commitments **and** all per-lookup LogUp commitments (helpers + accumulator),
+before `prfTrashComs` are absorbed. For circuits with `ntrash = 0`, `prfTrashComs` is
+empty, but the squeeze still happens at the same position.
 
 ---
 
@@ -649,39 +707,67 @@ z_next_xlast = mkScalar prfPermProdEvals[3(j+1)+2]  // next chunk at x·ω^last
 e_link = l0 × (z_{j+1}(x) − zj_xlast)
 ```
 
-For the last chunk (j = np−1), only `e_init`, `e_final`, `e_prod` are emitted (no `e_link`).
-The Horner fold processes them: for j=0..np−2: `[e_init, e_final, e_prod, e_link]`; for
-j=np−1: `[e_init, e_final, e_prod]`.
+The Horner fold processes them in this global order (not per-chunk):
+
+```
+[1]           l₀ × (1 − Z_0(x))                            ← init (chunk 0 only)
+[2]           l_last × (Z_{np−1}(x)² − Z_{np−1}(x))        ← final (last chunk only)
+[3..np+1]     l₀ × (Z_{j+1}(x) − Z_j(x·ω^last))  j=0..np−2  ← chunk links
+[np+2..2np+1] activeRows × (LHS_j − RHS_j)          j=0..np−1  ← product constraints
+```
+
+Total permutation expressions: `2 × np + 1 = 2 × numChunks + 1`.
 
 ### 6.4 Lookup argument constraints
 
-For each lookup k (0..nl−1):
+midnight-zk uses the **LogUp** lookup argument (v7), which replaces the old Plookup
+grand-product scheme with a logarithmic-derivative identity. Each lookup k has `nc_k` chunks
+(one chunk groups parallel inputs whose combined degree stays within `cs_degree`), and
+contributes `nc_k + 2` constraint expressions.
+
+Let `o_k = Σ_{i<k}(nc_i + 3)` be the flat offset into `prfLogupEvals` for lookup k.
 
 ```
--- Evaluations:
-zpk_x  = mkScalar prfLookupEvals[5k]       // Z^lp_k(x)
-zpk_xw = mkScalar prfLookupEvals[5k+1]     // Z^lp_k(x·ω)
-Ak_x   = mkScalar prfLookupEvals[5k+2]     // A'_k(x) — permuted input
-Ak_xi  = mkScalar prfLookupEvals[5k+3]     // A'_k(x·ω⁻¹)
-Sk_x   = mkScalar prfLookupEvals[5k+4]     // S'_k(x) — permuted table
+-- Evaluations from prfLogupEvals at offset o_k:
+multEval      = mkScalar prfLogupEvals[o_k]              // m_k(x) — multiplicity poly
+helperEvals   = [ mkScalar prfLogupEvals[o_k + 1 + c]    // h_{k,c}(x) for c=0..nc_k-1
+                  | c ← 0..nc_k-1 ]
+accumEval     = mkScalar prfLogupEvals[o_k + nc_k + 1]   // Z_k(x)
+accumNextEval = mkScalar prfLogupEvals[o_k + nc_k + 2]   // Z_k(x·ω)
 
--- θ-compression of input expressions (vkLookupInputExprs[k]):
-compInput = foldl (\acc e -> acc × θ + evalE e) 0 (vkLookupInputExprs vk !! k)
+-- θ-compression of table expression (vkLookupTableExprs[k]):
+t̄ = foldl (\acc e -> acc × θ + evalE e) 0 (vkLookupTableExprs[k])
 
--- θ-compression of table expressions (vkLookupTableExprs[k]):
-compTable = foldl (\acc e -> acc × θ + evalE e) 0 (vkLookupTableExprs vk !! k)
+-- Lookup selector evaluation:
+sel = evalE (vkLookupSelectorExprs[k])
+
+-- For chunk c (0..nc_k-1), compress each parallel input j:
+--   vkLookupInputExprs[k][c] is a list of width-expr lists, one per parallel input j.
+f̄_{c,j} = foldl (\acc e -> acc × θ + evalE e) 0 (vkLookupInputExprs[k][c][j])
+fsBeta_c = [ f̄_{c,j} + β  |  j ← 0..J_c-1 ]   // J_c = number of parallel inputs in chunk c
 ```
 
-Five constraint expressions:
+The `nc_k + 2` constraint expressions, in Horner-fold order:
 
 ```
-e0 = l0 × (1 − zpk_x)
-e1 = lLast × (zpk_x × zpk_x − zpk_x)
-e2 = activeRows × (zpk_xw × (Ak_x + β) × (Sk_x + γ)
-                 − zpk_x  × (compInput + β) × (compTable + γ))
-e3 = l0 × (Ak_x − Sk_x)
-e4 = activeRows × (Ak_x − Sk_x) × (Ak_x − Ak_xi)
+-- (1) Boundary (1 expression):
+e_boundary = (l₀ + l_last) × accumEval
+
+-- (2) Helper constraint for chunk c (nc_k expressions, c = 0..nc_k-1):
+--     h_c × Π_j(f̄_{c,j}+β) − Σ_j Π_{m≠j}(f̄_{c,m}+β) = 0
+--     (first term: product of all fsBeta; second: sum of partial products)
+product_c  = foldl (×) 1 fsBeta_c
+sumParts_c = Σ_j  Π_{m≠j} fsBeta_c[m]          // partial products (no field inversions)
+e_helper_c = helperEvals[c] × product_c − sumParts_c
+
+-- (3) Accumulator constraint (1 expression):
+sumH = Σ_c helperEvals[c]
+e_accum = activeRows × ((accumNextEval − accumEval − sel × sumH) × (t̄ + β) + multEval)
 ```
+
+**Note on β and γ**: LogUp uses only **β** for the lookup identity. The challenge **γ** is
+used exclusively in the permutation argument (§6.3). This distinguishes LogUp from the
+old Plookup protocol which required both β and γ for lookups.
 
 ### 6.5 Trash argument constraints
 
@@ -706,9 +792,11 @@ allExprs = gateExprs ++ permExprs ++ lookupExprs ++ trashExprs
 ```
 
 where:
-- `permExprs`: chunk 0 exprs, chunk 1 exprs, ..., chunk np−1 exprs (each chunk has 3 or 4 exprs)
-- `lookupExprs`: [e0,e1,e2,e3,e4] for lookup 0, then lookup 1, etc.
-- `trashExprs`: one expr per trashcan
+- `gateExprs`: one eval per gate polynomial (length G)
+- `permExprs`: 1 init + 1 final + (np−1) links + np products = 2×np+1 total (§6.3 order)
+- `lookupExprs`: for each lookup k: [e_boundary, e_helper_0, …, e_helper_{nc_k−1}, e_accum]
+  (nc_k + 2 per lookup; total nL = Σ_k(nc_k + 2))
+- `trashExprs`: one expr per trashcan (ntrash total)
 
 Horner fold with challenge y:
 
@@ -758,55 +846,99 @@ The H slot (kind `"H"`) is the only slot that expands to multiple physical commi
 
 ### 7.1 Poly-kind dispatch table
 
-| Kind | Commitment | Eval at rotation `r` |
-|------|-----------|----------------------|
-| `Advice` | `uncompress prfAdviceComs[ssIndex]` | `mkScalar prfAdviceEvals[ssEvalIdxs[r]]` |
-| `Instance` | `G1_zero` (uncompressed identity) | `zero` (hardcoded) |
-| `LookupTable` | `uncompress prfLookupTableComs[ssIndex]` | `mkScalar prfLookupEvals[5k+4]` |
-| `Trash` | `uncompress prfTrashComs[ssIndex]` | `mkScalar prfTrashEvals[ssIndex]` |
-| `Fixed` | `uncompress vkFixedComs[ssIndex]` | `mkScalar prfFixedEvals[ssEvalIdxs[r]]` |
-| `PermSigma` | `uncompress vkPermSigmaComs[ssIndex]` | `mkScalar prfPermSigmaEvals[ssIndex]` |
-| `H` | (see §7.2) | `hEval` |
-| `Random` | `uncompress prfRandomCom` | `mkScalar prfRandomEval` |
-| `PermProd` | `uncompress prfPermProdComs[ssIndex]` | `RotCur` → `prfPermProdEvals[3j]`; `RotNext` → `[3j+1]`; `RotLast` → `[3j+2]` |
-| `LookupProd` | `uncompress prfLookupProdComs[ssIndex]` | `RotCur` → `prfLookupEvals[5k]`; `RotNext` → `[5k+1]` |
-| `LookupInput` | `uncompress prfLookupInputComs[ssIndex]` | `RotCur` → `prfLookupEvals[5k+2]`; `RotPrev` → `[5k+3]` |
+| Kind | Commitment | Eval at rotation |
+|------|-----------|------------------|
+| `Advice` | `uncompress prfAdviceComs[ssIndex]` | `unifiedEvals[ssEvalIdxs[rotPos]]` |
+| `Instance` | `G1_zero` | `zero` (hardcoded — col 0 is zero poly) |
+| `LogupMult` | `uncompress prfLookupMultComs[ssIndex]` | `unifiedEvals[ssEvalIdxs[rotPos]]` |
+| `Trash` | `uncompress prfTrashComs[ssIndex]` | `unifiedEvals[ssEvalIdxs[rotPos]]` |
+| `Fixed` | `uncompress vkFixedComs[ssIndex]` | `unifiedEvals[ssEvalIdxs[rotPos]]` |
+| `PermSigma` | `uncompress vkPermSigmaComs[ssIndex]` | `unifiedEvals[ssEvalIdxs[rotPos]]` |
+| `H` | (see §7.2) | `linComEval` at RotCur; `unifiedEvals[ssEvalIdxs[rotPos]]` otherwise |
+| `PermProd` | `uncompress prfPermProdComs[ssIndex]` | `unifiedEvals[ssEvalIdxs[rotPos]]` |
+| `LogupAccum` | `uncompress prfLookupAccumComs[ssIndex]` | `unifiedEvals[ssEvalIdxs[rotPos]]` |
+| `LogupHelper` | `uncompress prfLookupHelperComs[ssIndex]` (flat concat across lookups) | `unifiedEvals[ssEvalIdxs[rotPos]]` |
 
 `uncompress` = `bls12_381_G1_uncompress`.
 
-### 7.2 H-piece special case
+`unifiedEvals` is the concatenation built in `assembleRotationSets`:
+```
+unifiedEvals = advEvalsRS | fixEvalsRS | permSigEvalsRS | permProdEvalsRS |
+               logupEvalsRS | trashEvalsRS | dummyEvalsRS
+```
+All `eval_idxs` in `*_rotation_sets.json` are absolute offsets into this array.
 
-> **Why H appears in the rotation set at all:**
-> `computeHEval` (§6.2) computes what `h(x)` *must* equal — the Horner-folded gate/perm/lookup
-> constraint sum divided by `x^n − 1`. That is the verifier's own calculation of the correct
-> value. But `prfHComs` are the prover's opaque commitments to the actual `h` polynomials they
-> used; the verifier cannot tell from the G1 points alone whether they encode the right `h`.
-> Including H in the rotation set with `hEval` as its evaluation side is what ties the two
-> together: the final KZG pairing check enforces that the committed polynomials open to exactly
-> `hEval`. A prover who committed to a fraudulent `h` would produce a commitment that opens to
-> a different value, failing the pairing check.
+`LogupHelper` uses a flat index `ssIndex` into the concatenation of all helper commitment lists
+across all lookups: `prfLookupHelperComs = concat [helpers_0, helpers_1, …]`.
 
-The vanishing quotient `h(X) = h₀(X) + X^{N−1} · h₁(X) + X^{2(N−1)} · h₂(X) + ...` occupies ONE
-logical x₁ slot (slot index `hSlotPos`) in the rotation set, but expands to `nh` physical
-G1 commitments `prfHComs[0..nh−1]`.
+### 7.2 H-piece special case: the linearization commitment
 
-The evaluation point `hSplit = x^{N−1}` is used to reconstruct the logical slot evaluation:
+midnight-zk does not commit to `h(X)` directly. The prover commits to the **linearization
+polynomial**:
 
 ```
-h(x) = Σⱼ₌₀^{nh−1} hSplit^j × hⱼ(x)   ← not needed: hEval is already assembled
+L(X) = (1 − x^n) · h(X) + Σ_k c_k · S_k(X)
 ```
 
-The combined commitment for the H slot, with x₁ factor `x₁^hSlotPos`:
+where `h(X) = h₀(X) + X^{N−1}·h₁(X) + …` is the vanishing quotient, `S_k` are the
+**simple-selector** fixed columns (boolean columns that are not sent in the proof stream),
+and `c_k` are Fiat-Shamir-derived scalars computed by `computeHEval` (the `selColData` output).
+
+#### Why L(X) rather than h(X)?
+
+Simple-selector columns are optimised away from the multi-open proof stream by midnight-proofs:
+the prover knows `S_k(x) = 1` at any random x (they are boolean with a sparse support that
+doesn't include random field elements), so the verifier can substitute 1 without receiving
+those evaluations. But the commitment `[S_k(s)]₁` must still appear somewhere to bind the
+prover. midnight-proofs folds the `S_k` commitments into `L(X)` with coefficients `c_k`, so
+the H slot commitment is a linear combination of `[h_j(s)]₁` and `[S_k(s)]₁` pieces.
+
+#### Evaluation at x
+
+At x, substituting `S_k(x) = 1` (simple-selector substitution):
 
 ```
-x₁^hSlotPos × Σⱼ₌₀^{nh−1} hSplit^j × [hⱼ]₁
+L(x) = (1 − x^n) · h(x) + Σ_k c_k
+      = −(x^n − 1) · hEval + Σ_k c_k
+      =: linComEval
 ```
 
-is computed as an MSM: `msm (zipWith (×) x₁_powers hSplit_powers) prfHComs` where
-`x₁_powers[j] = x₁^hSlotPos × hSplit^j`.
+This is what `computeHEval` returns as `linComEval`. The H slot at `RotCur` uses
+`linComEval` as its evaluation (not `hEval` directly, and not from the proof stream).
 
-The evaluation contribution is simply `x₁^hSlotPos × hEval` (one scalar, added to
-`rsQEvalsAtPts[0]` — the H slot always appears in the single-rotation set `{x}`).
+#### Commitment MSM for the H slot
+
+The H slot (logical index `hSlotPos` in the rotation set, with accumulated power `x₁^{hSlotPos}`)
+expands to `nh + |selCols|` physical G1 points in the MSM:
+
+```
+-- h-piece contributions (l = 0..nh−1):
+scalar_l = x₁^{hSlotPos} × (1 − x^n) × hSplit^l    // hSplit = x^{N-1}
+point_l  = uncompress prfHComs[l]
+
+-- simple-selector column contributions (k = 0..|selColData|−1):
+scalar_k = x₁^{hSlotPos} × c_k                      // c_k from selColData
+point_k  = uncompress vkFixedComs[colIdx_k]          // colIdx_k from selColData
+```
+
+`powers hSplit nh` produces `[1, hSplit, hSplit², …, hSplit^{nh−1}]`.
+
+#### At other rotations (fewer-point-sets dummy evals)
+
+When the `fewer-point-sets` feature is active, the H slot may appear in a multi-rotation set
+(e.g. `{x, xω}`). At non-current rotations the H slot's eval comes from the dummy
+evaluations appended to `prfDummyEvals` — `unifiedEvals[ssEvalIdxs[rotPos]]` in the unified
+eval array (see §3.5 and §3.6). These dummy evals are synthetic values the prover generates
+so the KZG opening remains consistent across the merged set.
+
+#### Soundness
+
+`computeHEval` derives `hEval = hEvalSum / (x^n−1)` from the Horner-folded constraint sum.
+It then computes `linComEval` from `hEval` and `selColData`. The KZG multi-point opening
+check in `verifyGwc` enforces that the committed `L(X)` polynomial opens to exactly
+`linComEval`. A prover who committed to a fraudulent `L` (not encoding the correct `h` and
+selector columns) would produce a commitment inconsistent with `linComEval`, causing the
+final pairing check to fail.
 
 ---
 

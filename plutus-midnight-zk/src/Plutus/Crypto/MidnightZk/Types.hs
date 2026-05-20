@@ -57,7 +57,7 @@ import PlutusTx.Builtins (
     BuiltinBLS12_381_G2_Element,
     BuiltinByteString,
  )
-import PlutusTx.Prelude (Integer)
+import PlutusTx.Prelude (Bool, Integer)
 import qualified Prelude as Haskell
 
 -- ---------------------------------------------------------------------------
@@ -221,28 +221,26 @@ data RotationSet = RotationSet
 
 -- | Polynomial kind for a slot within a rotation set.
 data SlotKind
-    = -- | column index into 'prfAdviceComs'; eval via 'ssEvalIdxs'
+    = -- | column index into 'prfAdviceComs'; eval from 'ssEvalVals'
       SKAdvice
     | -- | zero polynomial (commitment and eval are both zero)
       SKInstance
-    | -- | k into 'prfLookupTableComs'
-      SKLookupTable
+    | -- | k into 'prfLookupMultComs'; eval from 'ssEvalVals'
+      SKLogupMult
     | -- | k into 'prfTrashComs'
       SKTrash
-    | -- | column index into 'vkFixedComs'; eval via 'ssEvalIdxs'
+    | -- | column index into 'vkFixedComs'; eval from 'ssEvalVals'
       SKFixed
     | -- | k into 'vkPermSigmaComs'
       SKPermSigma
     | -- | uses all 'prfHComs' with hSplit scaling (index ignored)
       SKH
-    | -- | random polynomial (index ignored)
-      SKRandom
     | -- | chunk index into 'prfPermProdComs'
       SKPermProd
-    | -- | k into 'prfLookupProdComs'
-      SKLookupProd
-    | -- | k into 'prfLookupInputComs'
-      SKLookupInput
+    | -- | k into 'prfLookupAccumComs'; eval from 'ssEvalVals'
+      SKLogupAccum
+    | -- | flat helper index into concat 'prfLookupHelperComs'; eval from 'ssEvalVals'
+      SKLogupHelper
     deriving (Haskell.Show)
 
 makeLift ''SlotKind
@@ -255,10 +253,12 @@ data SlotSpec = SlotSpec
     -- ^ Polynomial kind.
     , ssIndex :: Integer
     -- ^ Primary index into the appropriate proof/VK array.
-    , ssEvalIdxs :: [Integer]
-    {- ^ Per-rotation evaluation indices (one per rotation in the containing set).
-    Used for kinds 0 and 4 to directly index 'prfAdviceEvals' / 'prfFixedEvals'
-    without a linear scan through a query map. Ignored for all other kinds.
+    , ssEvalVals :: [Scalar]
+    {- ^ Per-rotation precomputed evaluation values (one per rotation in the containing set).
+    Precomputed off-chain at parse time from the proof eval arrays so that on-chain
+    verification uses O(rotPos) ≤ O(4) indexing instead of O(absIdx) ≤ O(195).
+    For 'SKH' at 'RotCur', the value at index 0 is a placeholder (linComEval is
+    substituted at verification time).  For 'SKInstance', all values are zero.
     -}
     }
     deriving (Haskell.Show)
@@ -335,6 +335,12 @@ data VerifyingKey = VerifyingKey
     {- ^ 32-byte circuit identity hash, absorbed first into the transcript.
     Binds all Fiat-Shamir challenges to this specific circuit.
     -}
+    , vkSimpleSelectorMask :: [Bool]
+    {- ^ Per fixed-query position: True if this position is a simple (multiplicative)
+    selector.  Simple selector evals are substituted with 1 by the verifier and are
+    NOT absorbed into the Fiat-Shamir transcript.  Length = total number of fixed
+    queries (including simple selectors).
+    -}
     , vkGatePolys :: [GateExpr]
     {- ^ Decoded gate constraint expression trees, in evaluate_identities order.
     Each 'GateExpr' is one polynomial expression.  Constant and scale scalars
@@ -344,17 +350,29 @@ data VerifyingKey = VerifyingKey
     , vkPermColTypes :: [(Integer, Integer)]
     {- ^ Per permutation column: (colType, evalIdx) where
     colType 0=Advice, 1=Fixed, 2=Instance; evalIdx is the
-    proof evaluation index at Rotation::cur().
+    unified eval array index at Rotation::cur().
     Ordered as in the permutation Argument columns list.
     -}
-    , vkLookupInputExprs :: [[GateExpr]]
-    -- ^ Per lookup argument: list of decoded input expression trees.
+    , vkLookupInputExprs :: [[[[GateExpr]]]]
+    -- ^ Per lookup: [chunk][parallel_input][width_exprs]. Decoded at parse time.
     , vkLookupTableExprs :: [[GateExpr]]
     -- ^ Per lookup argument: list of decoded table expression trees.
+    , vkLookupSelectorExprs :: [GateExpr]
+    -- ^ Per lookup: one decoded selector expression tree.
     , vkTrashSelectors :: [GateExpr]
     -- ^ Per trashcan argument: decoded selector expression tree.
     , vkTrashConstraintExprs :: [[GateExpr]]
     -- ^ Per trashcan argument: list of decoded constraint expression trees.
+    , vkGateSelCols :: [Integer]
+    {- ^ Per gate polynomial: fixed column index of the simple selector used by that gate,
+    or -1 if the gate uses no simple selector. Parallel to vkGatePolys.
+    Used in computeHEval to track per-selector-column Horner accumulators.
+    -}
+    , vkSimpleSelColList :: [Integer]
+    {- ^ Unique simple selector column indices (in first-appearance order from vkGateSelCols,
+    all ≥ 0). One entry per distinct simple-selector column in the circuit.
+    Used as the key list for per-column Horner accumulators in computeHEval.
+    -}
     }
     deriving (Haskell.Show)
 
@@ -375,20 +393,21 @@ data Proof = Proof
     -- Commitments (absorbed into the transcript in this order)
     { prfAdviceComs :: [BuiltinByteString]
     -- ^ Compressed G1: one per advice column. [a₀], [a₁], …
-    , prfLookupInputComs :: [BuiltinByteString]
-    -- ^ Compressed G1: permuted input [A'_k], one per lookup.
-    , prfLookupTableComs :: [BuiltinByteString]
-    -- ^ Compressed G1: permuted table [S'_k], one per lookup.
+    , prfLookupMultComs :: [BuiltinByteString]
+    -- ^ Compressed G1: LogUp multiplicity [m_k], one per lookup. Absorbed after advice_coms.
     , prfPermProdComs :: [BuiltinByteString]
-    -- ^ Compressed G1: permutation grand product [Z_j], one per chunk.
-    , prfLookupProdComs :: [BuiltinByteString]
-    -- ^ Compressed G1: lookup grand product [Z^lp_k], one per lookup.
+    -- ^ Compressed G1: permutation z-product [Z_j], one per chunk.
+    , prfLookupHelperComs :: [[BuiltinByteString]]
+    {- ^ Compressed G1: LogUp helper polynomials, per lookup.
+    For lookup k with nc_k chunks: [h_{k,0}, …, h_{k,nc_k-1}].
+    Absorbed after perm_prod_coms, interleaved with 'prfLookupAccumComs' per lookup.
+    -}
+    , prfLookupAccumComs :: [BuiltinByteString]
+    -- ^ Compressed G1: LogUp accumulator [Z_k], one per lookup. Absorbed after each lookup's helpers.
     , prfTrashComs :: [BuiltinByteString]
     {- ^ Compressed G1: extra blinding commitments (circuit-dependent; often empty).
-    Absorbed into the transcript after lookup prod coms, before the challenge squeeze.
+    Absorbed after the trash challenge squeeze.
     -}
-    , prfRandomCom :: BuiltinByteString
-    -- ^ Compressed G1: blinding (random) polynomial commitment.
     , prfHComs :: [BuiltinByteString]
     {- ^ Compressed G1: vanishing-quotient pieces [h₀], [h₁], …
     where h(X) = h₀(X) + X^{N-1}·h₁(X) + X^{2(N-1)}·h₂(X) + …
@@ -402,34 +421,37 @@ data Proof = Proof
     f(X) − f(x₃) = (X − x₃) · w(X).
     -}
     , -- Evaluations (sent after all commitments; x is derived before these)
-      -- Note: instance_poly_eval is always 0 in midnight-zk (col 0 is the zero polynomial).
-      -- The 32 bytes are consumed from the proof stream for transcript consistency but
-      -- not stored here; the verifier hardcodes 0 at all use sites.
       prfAdviceEvals :: [Integer]
     {- ^ Advice polynomial evaluations, in @advice_queries@ order.
     One entry per query (not per column).
     -}
     , prfFixedEvals :: [Integer]
-    -- ^ Fixed column evaluations, in @fixed_queries@ order.
-    , prfRandomEval :: Integer
-    -- ^ Blinding polynomial evaluation at x.
+    -- ^ Fixed column evaluations, in @fixed_queries@ order (simple selectors omitted from transcript).
     , prfPermSigmaEvals :: [Integer]
     -- ^ Permutation sigma polynomial evaluations at x, one per sigma column.
     , prfPermProdEvals :: [Integer]
-    {- ^ Permutation grand-product evaluations, flattened across all chunks.
+    {- ^ Permutation z-product evaluations, flattened across all chunks.
     Non-last chunks each have 3 evals: (x, x·ω, x·ω^(-(blinding+1))).
     The last chunk has 2 evals: (x, x·ω).
-    Total count = (numPermProds - 1) × 3 + 2.
+    Total count = (numChunks - 1) × 3 + 2.
     Indexed as 3·j + field for chunk j (field ∈ 0..2 for non-last, 0..1 for last).
     -}
-    , prfLookupEvals :: [Integer]
-    {- ^ Lookup evaluations, 5 values per lookup in order:
-    [prod@x, prod@x·ω, input@x, input@x·ω⁻¹, table@x].
+    , prfLogupEvals :: [Integer]
+    {- ^ LogUp evaluations, flat across all lookups. For lookup k with nc_k chunks:
+    offset(k) = Σ_{i<k}(nc_i + 3);
+    at offset(k)+0: mult_eval; +1..+nc_k: helper_evals; +nc_k+1: accum_eval; +nc_k+2: accum_next_eval.
+    These values are pre-indexed into 'ssEvalVals' at parse time by 'parseRotationSets'.
     -}
     , prfTrashEvals :: [Integer]
     {- ^ Extra blinding polynomial evaluations at x (one per trash commitment).
-    Written to the transcript after lookup evals, before the GWC f-commitment.
     Empty for circuits with standard blinding (blinding_factors ≤ 5).
+    -}
+    , prfDummyEvals :: [Integer]
+    {- ^ Dummy polynomial evaluations injected by the @fewer-point-sets@ feature.
+    These are appended after all regular evaluations in the proof stream.
+    Absorbed into the Fiat-Shamir transcript before x₁\/x₂ are squeezed, and
+    referenced by 'ssEvalIdxs' entries for Fixed\@1-only columns in the merged
+    rotation set.  Empty for circuits compiled without @fewer-point-sets@.
     -}
     , prfQEvalsOnX3 :: [Integer]
     {- ^ Prover's claimed evaluation qᵢ(x₃) for each rotation set i.
