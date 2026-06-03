@@ -264,7 +264,7 @@ requires n pairings — too expensive.
 
 ### GWC: batching across multiple evaluation points
 
-The **GWC protocol** (Gemini-With-Challenges) reduces all openings to a single
+The **GWC protocol** (Gabizon, Williamson, and Ciobotaru) reduces all openings to a single
 pairing, regardless of how many polynomials and evaluation points there are.
 
 **Step 1 — Group by rotation set.**
